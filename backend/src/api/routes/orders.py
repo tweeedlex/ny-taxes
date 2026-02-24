@@ -48,6 +48,9 @@ from src.api.deps import (
 router = APIRouter(prefix="/orders", tags=["orders"])
 FILE_TASK_STATUS_IN_PROGRESS = "in_progress"
 FILE_TASK_STATUS_COMPLETED = "completed"
+PARALLEL_IMPORT_THRESHOLD = 100
+PARALLEL_IMPORT_CHUNKS = 5
+IMPORT_BULK_INSERT_BATCH_SIZE = 500
 
 
 @router.post("", response_model=OrderTaxCalculationResponse)
@@ -433,6 +436,8 @@ async def _process_import_task(
     successful_rows = task.successful_rows
     failed_rows = task.failed_rows
     processed_rows = successful_rows + failed_rows
+    pending_orders: list[Order] = []
+    pending_failed_rows = 0
     object_name = _extract_object_name(file_path=task.file_path, bucket=storage.bucket)
 
     try:
@@ -440,25 +445,45 @@ async def _process_import_task(
         text = content_bytes.decode("utf-8-sig")
         reader = csv.DictReader(io.StringIO(text))
         columns = _resolve_import_columns(reader.fieldnames)
+        rows = list(reader)
 
-        for row_number, row in enumerate(reader, start=1):
-            if row_number <= processed_rows:
-                continue
+        indexed_rows = [
+            (row_number, row)
+            for row_number, row in enumerate(rows, start=1)
+            if row_number > processed_rows
+        ]
+
+        if len(indexed_rows) > PARALLEL_IMPORT_THRESHOLD:
+            row_outcomes = await _compute_outcomes_parallel(
+                indexed_rows=indexed_rows,
+                columns=columns,
+                zip_service=zip_service,
+                tax_rate_service=tax_rate_service,
+            )
+        else:
+            row_outcomes = _compute_outcomes_sequential(
+                indexed_rows=indexed_rows,
+                columns=columns,
+                zip_service=zip_service,
+                tax_rate_service=tax_rate_service,
+            )
+
+        for row_number, success, computed in row_outcomes:
             processed_rows = row_number
-            try:
-                latitude, longitude, timestamp, subtotal = _parse_import_row(row=row, columns=columns)
-                computed = _compute_order_values(
-                    latitude=latitude,
-                    longitude=longitude,
-                    timestamp=timestamp,
-                    subtotal_raw=subtotal,
-                    zip_service=zip_service,
-                    tax_rate_service=tax_rate_service,
+            if success and computed is not None:
+                pending_orders.append(Order(user_id=task.user_id, **computed))
+            else:
+                pending_failed_rows += 1
+
+            if len(pending_orders) >= IMPORT_BULK_INSERT_BATCH_SIZE:
+                inserted_count, flushed_failed = await _flush_pending_import_batch(
+                    pending_orders=pending_orders,
+                    pending_failed_rows=pending_failed_rows,
                 )
-                await Order.create(user_id=task.user_id, **computed)
-                successful_rows += 1
-            except Exception:
-                failed_rows += 1
+                successful_rows += inserted_count
+                failed_rows += flushed_failed
+                pending_orders = []
+                pending_failed_rows = 0
 
             if processed_rows % 30 == 0:
                 await _update_file_task_progress(
@@ -470,6 +495,13 @@ async def _process_import_task(
     except Exception:
         pass
     finally:
+        if pending_orders or pending_failed_rows:
+            inserted_count, flushed_failed = await _flush_pending_import_batch(
+                pending_orders=pending_orders,
+                pending_failed_rows=pending_failed_rows,
+            )
+            successful_rows += inserted_count
+            failed_rows += flushed_failed
         await _update_file_task_progress(
             task_id=task_id,
             successful_rows=successful_rows,
@@ -505,6 +537,83 @@ def _parse_import_row(
     if subtotal < 0:
         raise ValueError("subtotal must be >= 0")
     return latitude, longitude, timestamp, subtotal
+
+
+def _compute_outcomes_sequential(
+    indexed_rows: list[tuple[int, dict[str, str]]],
+    columns: dict[str, str],
+    zip_service: ZipCodeByCoordinatesService,
+    tax_rate_service: TaxRateByZipService,
+) -> list[tuple[int, bool, dict[str, Decimal | float | datetime | str] | None]]:
+    outcomes: list[tuple[int, bool, dict[str, Decimal | float | datetime | str] | None]] = []
+    for row_number, row in indexed_rows:
+        outcomes.append(
+            _compute_row_outcome(
+                row_number=row_number,
+                row=row,
+                columns=columns,
+                zip_service=zip_service,
+                tax_rate_service=tax_rate_service,
+            )
+        )
+    return outcomes
+
+
+async def _compute_outcomes_parallel(
+    indexed_rows: list[tuple[int, dict[str, str]]],
+    columns: dict[str, str],
+    zip_service: ZipCodeByCoordinatesService,
+    tax_rate_service: TaxRateByZipService,
+) -> list[tuple[int, bool, dict[str, Decimal | float | datetime | str] | None]]:
+    chunks = _split_rows_into_chunks(indexed_rows=indexed_rows, chunks_count=PARALLEL_IMPORT_CHUNKS)
+    chunk_futures = [
+        asyncio.to_thread(
+            _compute_outcomes_sequential,
+            chunk,
+            columns,
+            zip_service,
+            tax_rate_service,
+        )
+        for chunk in chunks
+        if chunk
+    ]
+    chunk_results = await asyncio.gather(*chunk_futures)
+    flat_results = [item for chunk in chunk_results for item in chunk]
+    return sorted(flat_results, key=lambda item: item[0])
+
+
+def _split_rows_into_chunks(
+    indexed_rows: list[tuple[int, dict[str, str]]],
+    chunks_count: int,
+) -> list[list[tuple[int, dict[str, str]]]]:
+    if not indexed_rows:
+        return []
+    chunks: list[list[tuple[int, dict[str, str]]]] = [[] for _ in range(chunks_count)]
+    for idx, row in enumerate(indexed_rows):
+        chunks[idx % chunks_count].append(row)
+    return chunks
+
+
+def _compute_row_outcome(
+    row_number: int,
+    row: dict[str, str],
+    columns: dict[str, str],
+    zip_service: ZipCodeByCoordinatesService,
+    tax_rate_service: TaxRateByZipService,
+) -> tuple[int, bool, dict[str, Decimal | float | datetime | str] | None]:
+    try:
+        latitude, longitude, timestamp, subtotal = _parse_import_row(row=row, columns=columns)
+        computed = _compute_order_values(
+            latitude=latitude,
+            longitude=longitude,
+            timestamp=timestamp,
+            subtotal_raw=subtotal,
+            zip_service=zip_service,
+            tax_rate_service=tax_rate_service,
+        )
+        return (row_number, True, computed)
+    except Exception:
+        return (row_number, False, None)
 
 
 def _parse_import_timestamp(raw_timestamp: str) -> datetime:
@@ -543,6 +652,20 @@ async def _update_file_task_progress(
     task.failed_rows = failed_rows
     task.status = status
     await task.save(update_fields=["successful_rows", "failed_rows", "status", "updated_at"])
+
+
+async def _flush_pending_import_batch(
+    pending_orders: list[Order],
+    pending_failed_rows: int,
+) -> tuple[int, int]:
+    inserted_count = 0
+    if pending_orders:
+        await Order.bulk_create(
+            pending_orders,
+            batch_size=IMPORT_BULK_INSERT_BATCH_SIZE,
+        )
+        inserted_count = len(pending_orders)
+    return inserted_count, pending_failed_rows
 
 
 def _extract_object_name(file_path: str, bucket: str) -> str:
