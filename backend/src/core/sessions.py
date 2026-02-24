@@ -3,7 +3,7 @@ from uuid import uuid4
 from fastapi import Response
 from redis.asyncio import Redis
 
-from .config import settings
+from src.core.config import settings
 
 
 class SessionManager:

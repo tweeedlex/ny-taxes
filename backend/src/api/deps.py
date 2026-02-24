@@ -2,11 +2,11 @@ from typing import Callable
 
 from fastapi import Depends, HTTPException, Request, WebSocket, WebSocketException, status
 
-from ..core.config import settings
-from ..core.sessions import SessionManager
-from ..core.storage import MinioStorage
-from ..models.user import User
-from ..services import TaxRateByZipService, ZipCodeByCoordinatesService
+from src.core.config import settings
+from src.core.sessions import SessionManager
+from src.core.storage import MinioStorage
+from src.models.user import User
+from src.services import TaxRateByZipService, ZipCodeByCoordinatesService
 
 
 def get_session_manager(request: Request) -> SessionManager:

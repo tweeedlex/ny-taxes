@@ -1,7 +1,7 @@
-from .authorities import EDIT_ORDERS, EDIT_USERS, READ_ORDERS, READ_USERS
-from .config import settings
-from .security import hash_password
-from ..models.user import User
+from src.core.authorities import EDIT_ORDERS, EDIT_USERS, READ_ORDERS, READ_USERS
+from src.core.config import settings
+from src.core.security import hash_password
+from src.models.user import User
 
 
 async def ensure_bootstrap_admin() -> None:

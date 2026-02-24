@@ -1,10 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 
-from ..deps import require_authority
-from ...core.authorities import EDIT_USERS, READ_USERS
-from ...core.security import hash_password
-from ...models.user import User
-from ...schemas.user import UserCreate, UserRead, UserUpdate
+from src.api.deps import require_authority
+from src.core.authorities import EDIT_USERS, READ_USERS
+from src.core.security import hash_password
+from src.models.user import User
+from src.schemas.user import UserCreate, UserRead, UserUpdate
 
 router = APIRouter(prefix="/users", tags=["users"])
 

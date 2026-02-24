@@ -2,7 +2,7 @@ from io import BytesIO
 
 from minio import Minio
 
-from .config import settings
+from src.core.config import settings
 
 
 class MinioStorage:
@@ -40,4 +40,3 @@ class MinioStorage:
         finally:
             response.close()
             response.release_conn()
-

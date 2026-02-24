@@ -1,12 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 
-from ..deps import get_current_user, get_session_manager
-from ...core.config import settings
-from ...core.security import hash_password, verify_password
-from ...core.sessions import SessionManager, clear_session_cookie, set_session_cookie
-from ...models.user import User
-from ...schemas.auth import LoginRequest, RegisterRequest
-from ...schemas.user import UserRead
+from src.api.deps import get_current_user, get_session_manager
+from src.core.config import settings
+from src.core.security import hash_password, verify_password
+from src.core.sessions import SessionManager, clear_session_cookie, set_session_cookie
+from src.models.user import User
+from src.schemas.auth import LoginRequest, RegisterRequest
+from src.schemas.user import UserRead
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 

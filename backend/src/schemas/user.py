@@ -2,7 +2,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from ..core.authorities import ALL_AUTHORITIES
+from src.core.authorities import ALL_AUTHORITIES
 
 
 def _normalize_authorities(authorities: list[str]) -> list[str]:

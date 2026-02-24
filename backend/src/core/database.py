@@ -1,6 +1,6 @@
 from tortoise import Tortoise
 
-from .config import settings
+from src.core.config import settings
 
 
 async def init_db() -> None:

@@ -19,13 +19,13 @@ from fastapi import (
     status,
 )
 
-from ...core.authorities import EDIT_ORDERS, READ_ORDERS
-from ...core.storage import MinioStorage
-from ...models.file_task import FileTask
-from ...models.order import Order
-from ...models.user import User
-from ...services import TaxRateByZipService, ZipCodeByCoordinatesService
-from ...schemas.order import (
+from src.core.authorities import EDIT_ORDERS, READ_ORDERS
+from src.core.storage import MinioStorage
+from src.models.file_task import FileTask
+from src.models.order import Order
+from src.models.user import User
+from src.services import TaxRateByZipService, ZipCodeByCoordinatesService
+from src.schemas.order import (
     FileTaskRead,
     OrderCreateRequest,
     OrderImportTaskCreateResponse,
@@ -36,7 +36,7 @@ from ...schemas.order import (
     OrderTaxCalculationResponse,
     TaxBreakdownResponse,
 )
-from ..deps import (
+from src.api.deps import (
     get_storage,
     get_tax_rate_service,
     get_zip_code_service,

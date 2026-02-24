@@ -6,14 +6,14 @@ import redis.asyncio as redis
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
-from .api.router import api_router
-from .api.routes.orders import resume_in_progress_import_tasks
-from .core.bootstrap import ensure_bootstrap_admin
-from .core.config import settings
-from .core.database import close_db, init_db
-from .core.sessions import SessionManager
-from .core.storage import MinioStorage
-from .services import TaxRateByZipService, ZipCodeByCoordinatesService
+from src.api.router import api_router
+from src.api.routes.orders import resume_in_progress_import_tasks
+from src.core.bootstrap import ensure_bootstrap_admin
+from src.core.config import settings
+from src.core.database import close_db, init_db
+from src.core.sessions import SessionManager
+from src.core.storage import MinioStorage
+from src.services import TaxRateByZipService, ZipCodeByCoordinatesService
 
 
 @asynccontextmanager
