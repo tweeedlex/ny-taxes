@@ -73,6 +73,9 @@ cp .env.example .env
 docker compose up --build
 ```
 
+Якщо задаєш `REDIS_PASSWORD` у `.env`, Redis автоматично запускається з `requirepass`,
+а API підключається з `AUTH`.
+
 3. API буде доступне на:
 - `http://localhost:8000`
 - Swagger: `http://localhost:8000/docs`
