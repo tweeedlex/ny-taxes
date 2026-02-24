@@ -4,6 +4,7 @@
 - авторизацією через `login + password`;
 - серверними сесіями в `Redis` через `HttpOnly cookie` (без JWT);
 - `Postgres` як БД;
+- `MinIO` для збереження імпортованих CSV;
 - `Tortoise ORM`;
 - ролеподібними authorities для доступу:
   - `read_users`
@@ -16,8 +17,11 @@
   - `POST /auth/logout`
   - `GET /auth/me`
   - `POST /orders` (розрахунок податку за координатами/ZIP)
+  - `POST /orders/import` (CSV імпорт у фоні)
   - `GET /orders` (список, pagination, filters)
   - `GET /orders/stats` (агрегація за період з розбивкою по днях)
+  - `GET /orders/import/tasks` (всі задачі імпорту)
+  - `WS /orders/import/tasks/ws` (пуш задач кожні 3 секунди)
   - `GET /static/*` для віддачі статичних файлів з `src/static`
   - CRUD `users` з перевіркою authorities.
 
@@ -44,6 +48,7 @@ src/
     security.py
     sessions.py
   models/
+    file_task.py
     order.py
     user.py
   schemas/
@@ -78,12 +83,19 @@ docker compose up --build
 - `GET /users`, `GET /users/{id}` потребують `read_users`.
 - `POST /users`, `PATCH /users/{id}`, `DELETE /users/{id}` потребують `edit_users`.
 - `POST /orders` потребує `edit_orders` і створює запис у таблиці `orders`.
+- `POST /orders/import` потребує `edit_orders`:
+  - приймає CSV (multipart/form-data);
+  - завантажує файл у MinIO;
+  - створює `file_tasks` запис;
+  - запускає фонову обробку і оновлює task кожні 30 рядків.
+  - якщо сервер рестартиться, `in_progress` задачі автоматично продовжуються зі зміщенням `successful_rows + failed_rows + 1`.
 - `GET /orders` потребує `read_orders`.
   - Pagination: `limit`, `offset`
   - Filters: `zip_code`, `timestamp_from`, `timestamp_to`, `subtotal_min`, `subtotal_max`
 - `GET /orders/stats` потребує `read_orders`.
   - Query params: `from_date`, `to_date` у форматі `YYYY.MM.DD` (по полю `timestamp`)
   - Response: total за період + `daily` розбивка з тими ж метриками по днях
+- `GET /orders/import/tasks` і `WS /orders/import/tasks/ws` потребують `read_orders`.
 
 За замовчуванням доступний bootstrap-адмін (якщо задані змінні):
 - `BOOTSTRAP_ADMIN_LOGIN`

@@ -64,3 +64,20 @@ class OrdersStatsResponse(BaseModel):
     total_tax_amount: float
     total_orders: int
     daily: list[OrdersStatsDay]
+
+
+class FileTaskRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    user_id: int
+    file_path: str
+    successful_rows: int
+    failed_rows: int
+    status: str
+    created_at: datetime
+    updated_at: datetime
+
+
+class OrderImportTaskCreateResponse(BaseModel):
+    task: FileTaskRead

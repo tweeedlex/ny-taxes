@@ -33,6 +33,12 @@ class Settings(BaseSettings):
     session_ttl_seconds: int = 86400
     session_key_prefix: str = "session:"
 
+    minio_endpoint: str = "minio:9000"
+    minio_access_key: str = "minioadmin"
+    minio_secret_key: str = "minioadmin"
+    minio_bucket: str = "order-imports"
+    minio_secure: bool = False
+
     db_generate_schemas: bool = True
 
     bootstrap_admin_login: str | None = None
@@ -62,4 +68,3 @@ def get_settings() -> Settings:
 
 
 settings = get_settings()
-

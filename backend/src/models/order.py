@@ -4,6 +4,12 @@ from tortoise.models import Model
 
 class Order(Model):
     id = fields.IntField(pk=True)
+    user = fields.ForeignKeyField(
+        "models.User",
+        related_name="orders",
+        null=True,
+        on_delete=fields.SET_NULL,
+    )
 
     latitude = fields.FloatField()
     longitude = fields.FloatField()
@@ -28,4 +34,3 @@ class Order(Model):
             ("zip_code", "timestamp"),
             ("timestamp",),
         )
-
