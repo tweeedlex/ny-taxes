@@ -1,0 +1,5 @@
+READ_USERS = "read_users"
+EDIT_USERS = "edit_users"
+
+ALL_AUTHORITIES = {READ_USERS, EDIT_USERS}
+
