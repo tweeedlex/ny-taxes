@@ -38,6 +38,7 @@ class Settings(BaseSettings):
     minio_secret_key: str = "minioadmin"
     minio_bucket: str = "order-imports"
     minio_secure: bool = False
+    minio_public_base_url: str | None = None
 
     db_generate_schemas: bool = True
 

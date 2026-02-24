@@ -1,4 +1,5 @@
 from io import BytesIO
+from urllib.parse import quote
 
 from minio import Minio
 
@@ -18,6 +19,13 @@ class MinioStorage:
     @property
     def bucket(self) -> str:
         return self._bucket
+
+    @property
+    def base_url(self) -> str:
+        if settings.minio_public_base_url:
+            return settings.minio_public_base_url.rstrip("/")
+        scheme = "https" if settings.minio_secure else "http"
+        return f"{scheme}://{settings.minio_endpoint}"
 
     def ensure_bucket(self) -> None:
         if not self._client.bucket_exists(self._bucket):
@@ -40,3 +48,8 @@ class MinioStorage:
         finally:
             response.close()
             response.release_conn()
+
+    def object_url(self, object_name: str) -> str:
+        encoded_segments = [quote(segment, safe="") for segment in object_name.split("/")]
+        encoded_object = "/".join(encoded_segments)
+        return f"{self.base_url}/{self._bucket}/{encoded_object}"

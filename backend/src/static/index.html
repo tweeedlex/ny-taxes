@@ -1,0 +1,468 @@
+<!doctype html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NY Taxes Admin UI</title>
+  <style>
+    :root {
+      --bg: #f5f6f8;
+      --card: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --border: #d1d5db;
+      --accent: #1d4ed8;
+      --error: #b91c1c;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: sans-serif;
+      color: var(--text);
+      background: var(--bg);
+    }
+    main {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 16px;
+      display: grid;
+      gap: 16px;
+    }
+    h1, h2 { margin: 0 0 10px; }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+    }
+    .row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    label {
+      display: flex;
+      flex-direction: column;
+      font-size: 13px;
+      color: var(--muted);
+      gap: 4px;
+    }
+    input, textarea, button {
+      font: inherit;
+      padding: 8px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: #fff;
+      color: var(--text);
+    }
+    textarea { min-height: 80px; }
+    button {
+      cursor: pointer;
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+    }
+    button.secondary {
+      background: #fff;
+      color: var(--text);
+      border-color: var(--border);
+    }
+    .inline {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: end;
+      margin-bottom: 8px;
+    }
+    .muted { color: var(--muted); font-size: 12px; }
+    .error { color: var(--error); }
+    pre {
+      margin: 6px 0 0;
+      background: #0f172a;
+      color: #e2e8f0;
+      padding: 10px;
+      border-radius: 6px;
+      overflow: auto;
+      max-height: 320px;
+      font-size: 12px;
+    }
+    .grid-2 {
+      display: grid;
+      gap: 16px;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    }
+  </style>
+</head>
+<body>
+<main>
+  <h1>NY Taxes Frontend</h1>
+  <p class="muted">
+    Працює через cookie-сесію. Для доступу до users/orders потрібні відповідні authorities.
+  </p>
+
+  <section class="card">
+    <h2>Auth</h2>
+    <div class="grid-2">
+      <form id="registerForm">
+        <div class="row">
+          <label>Login <input name="login" required /></label>
+          <label>Password <input type="password" name="password" required /></label>
+          <label>Full name <input name="full_name" /></label>
+        </div>
+        <button type="submit">Register</button>
+      </form>
+
+      <form id="loginForm">
+        <div class="row">
+          <label>Login <input name="login" required /></label>
+          <label>Password <input type="password" name="password" required /></label>
+        </div>
+        <div class="inline">
+          <button type="submit">Login</button>
+          <button id="meBtn" type="button" class="secondary">Me</button>
+          <button id="logoutBtn" type="button" class="secondary">Logout</button>
+        </div>
+      </form>
+    </div>
+    <pre id="authOut">No data</pre>
+  </section>
+
+  <section class="card">
+    <h2>Users CRUD</h2>
+    <div class="grid-2">
+      <form id="usersListForm">
+        <div class="row">
+          <label>Limit <input name="limit" type="number" value="20" /></label>
+          <label>Offset <input name="offset" type="number" value="0" /></label>
+        </div>
+        <button type="submit">List users</button>
+      </form>
+
+      <form id="usersGetForm">
+        <div class="row">
+          <label>User ID <input name="user_id" type="number" required /></label>
+        </div>
+        <button type="submit">Get user</button>
+      </form>
+
+      <form id="usersCreateForm">
+        <div class="row">
+          <label>Login <input name="login" required /></label>
+          <label>Password <input type="password" name="password" required /></label>
+          <label>Full name <input name="full_name" /></label>
+          <label>Is active <input name="is_active" value="true" /></label>
+          <label>Authorities (comma) <input name="authorities" placeholder="read_users,edit_users,read_orders,edit_orders" /></label>
+        </div>
+        <button type="submit">Create user</button>
+      </form>
+
+      <form id="usersPatchForm">
+        <div class="row">
+          <label>User ID <input name="user_id" type="number" required /></label>
+        </div>
+        <label>Patch JSON
+          <textarea name="payload">{ "full_name": "Updated Name" }</textarea>
+        </label>
+        <button type="submit">Patch user</button>
+      </form>
+
+      <form id="usersDeleteForm">
+        <div class="row">
+          <label>User ID <input name="user_id" type="number" required /></label>
+        </div>
+        <button type="submit">Delete user</button>
+      </form>
+    </div>
+    <pre id="usersOut">No data</pre>
+  </section>
+
+  <section class="card">
+    <h2>Orders</h2>
+    <div class="grid-2">
+      <form id="ordersCreateForm">
+        <div class="row">
+          <label>Latitude <input name="latitude" value="42.47899580935274" required /></label>
+          <label>Longitude <input name="longitude" value="-76.2653141983343" required /></label>
+          <label>Subtotal <input name="subtotal" value="120.0" required /></label>
+          <label>Timestamp <input name="timestamp" value="2025-11-04T22:20:08Z" required /></label>
+        </div>
+        <button type="submit">Create order</button>
+      </form>
+
+      <form id="ordersListForm">
+        <div class="row">
+          <label>Limit <input name="limit" type="number" value="20" /></label>
+          <label>Offset <input name="offset" type="number" value="0" /></label>
+          <label>ZIP <input name="zip_code" /></label>
+          <label>Timestamp from <input name="timestamp_from" placeholder="2025-11-01T00:00:00Z" /></label>
+          <label>Timestamp to <input name="timestamp_to" placeholder="2025-11-30T23:59:59Z" /></label>
+          <label>Subtotal min <input name="subtotal_min" /></label>
+          <label>Subtotal max <input name="subtotal_max" /></label>
+        </div>
+        <button type="submit">List orders</button>
+      </form>
+
+      <form id="ordersStatsForm">
+        <div class="row">
+          <label>From date <input name="from_date" value="2025.11.04" required /></label>
+          <label>To date <input name="to_date" value="2025.11.05" required /></label>
+        </div>
+        <button type="submit">Get stats</button>
+      </form>
+    </div>
+    <pre id="ordersOut">No data</pre>
+  </section>
+
+  <section class="card">
+    <h2>CSV Import + Tasks</h2>
+    <form id="importForm" class="inline">
+      <label>CSV file
+        <input type="file" name="file" accept=".csv" required />
+      </label>
+      <button type="submit">Upload import</button>
+      <button id="tasksBtn" type="button" class="secondary">Load tasks</button>
+      <button id="wsConnectBtn" type="button" class="secondary">Connect WS</button>
+      <button id="wsCloseBtn" type="button" class="secondary">Close WS</button>
+    </form>
+    <p class="muted">
+      Формат CSV: колонки можуть бути в будь-якому порядку, обовʼязкові: longitude, latitude, timestamp, subtotal.
+    </p>
+    <pre id="importOut">No data</pre>
+    <pre id="wsOut">WS disconnected</pre>
+  </section>
+</main>
+
+<script>
+  const out = {
+    auth: document.getElementById("authOut"),
+    users: document.getElementById("usersOut"),
+    orders: document.getElementById("ordersOut"),
+    imp: document.getElementById("importOut"),
+    ws: document.getElementById("wsOut"),
+  };
+
+  let ws = null;
+
+  function show(el, data) {
+    if (typeof data === "string") {
+      el.textContent = data;
+      return;
+    }
+    el.textContent = JSON.stringify(data, null, 2);
+  }
+
+  async function api(path, options = {}) {
+    const response = await fetch(path, {
+      credentials: "include",
+      ...options,
+    });
+    const text = await response.text();
+    let payload = text;
+    try { payload = text ? JSON.parse(text) : null; } catch (_) {}
+    if (!response.ok) {
+      throw { status: response.status, payload };
+    }
+    return payload;
+  }
+
+  function getFormValue(form, name) {
+    return form.elements[name]?.value?.trim() ?? "";
+  }
+
+  function parseAuthorities(raw) {
+    return raw
+      .split(",")
+      .map((v) => v.trim())
+      .filter(Boolean);
+  }
+
+  document.getElementById("registerForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const form = e.currentTarget;
+    try {
+      const data = await api("/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          login: getFormValue(form, "login"),
+          password: getFormValue(form, "password"),
+          full_name: getFormValue(form, "full_name") || null,
+        }),
+      });
+      show(out.auth, data);
+    } catch (err) { show(out.auth, err); }
+  });
+
+  document.getElementById("loginForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const form = e.currentTarget;
+    try {
+      const data = await api("/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          login: getFormValue(form, "login"),
+          password: getFormValue(form, "password"),
+        }),
+      });
+      show(out.auth, data);
+    } catch (err) { show(out.auth, err); }
+  });
+
+  document.getElementById("meBtn").addEventListener("click", async () => {
+    try { show(out.auth, await api("/auth/me")); }
+    catch (err) { show(out.auth, err); }
+  });
+
+  document.getElementById("logoutBtn").addEventListener("click", async () => {
+    try {
+      await api("/auth/logout", { method: "POST" });
+      show(out.auth, { status: "logged_out" });
+    } catch (err) { show(out.auth, err); }
+  });
+
+  document.getElementById("usersListForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const q = new URLSearchParams({
+      limit: getFormValue(form, "limit") || "20",
+      offset: getFormValue(form, "offset") || "0",
+    });
+    try { show(out.users, await api(`/users?${q}`)); }
+    catch (err) { show(out.users, err); }
+  });
+
+  document.getElementById("usersGetForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const id = getFormValue(e.currentTarget, "user_id");
+    try { show(out.users, await api(`/users/${id}`)); }
+    catch (err) { show(out.users, err); }
+  });
+
+  document.getElementById("usersCreateForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const form = e.currentTarget;
+    try {
+      const data = await api("/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          login: getFormValue(form, "login"),
+          password: getFormValue(form, "password"),
+          full_name: getFormValue(form, "full_name") || null,
+          is_active: getFormValue(form, "is_active").toLowerCase() !== "false",
+          authorities: parseAuthorities(getFormValue(form, "authorities")),
+        }),
+      });
+      show(out.users, data);
+    } catch (err) { show(out.users, err); }
+  });
+
+  document.getElementById("usersPatchForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const id = getFormValue(form, "user_id");
+    try {
+      const payload = JSON.parse(getFormValue(form, "payload") || "{}");
+      show(out.users, await api(`/users/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      }));
+    } catch (err) { show(out.users, err); }
+  });
+
+  document.getElementById("usersDeleteForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const id = getFormValue(e.currentTarget, "user_id");
+    try {
+      await api(`/users/${id}`, { method: "DELETE" });
+      show(out.users, { status: "deleted", id });
+    } catch (err) { show(out.users, err); }
+  });
+
+  document.getElementById("ordersCreateForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const form = e.currentTarget;
+    try {
+      const data = await api("/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          latitude: Number(getFormValue(form, "latitude")),
+          longitude: Number(getFormValue(form, "longitude")),
+          subtotal: Number(getFormValue(form, "subtotal")),
+          timestamp: getFormValue(form, "timestamp"),
+        }),
+      });
+      show(out.orders, data);
+    } catch (err) { show(out.orders, err); }
+  });
+
+  document.getElementById("ordersListForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const q = new URLSearchParams();
+    const names = [
+      "limit", "offset", "zip_code", "timestamp_from", "timestamp_to", "subtotal_min", "subtotal_max",
+    ];
+    for (const n of names) {
+      const v = getFormValue(form, n);
+      if (v) q.set(n, v);
+    }
+    try { show(out.orders, await api(`/orders?${q.toString()}`)); }
+    catch (err) { show(out.orders, err); }
+  });
+
+  document.getElementById("ordersStatsForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const q = new URLSearchParams({
+      from_date: getFormValue(form, "from_date"),
+      to_date: getFormValue(form, "to_date"),
+    });
+    try { show(out.orders, await api(`/orders/stats?${q}`)); }
+    catch (err) { show(out.orders, err); }
+  });
+
+  document.getElementById("importForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const fd = new FormData(form);
+    try {
+      const data = await api("/orders/import", {
+        method: "POST",
+        body: fd,
+      });
+      show(out.imp, data);
+    } catch (err) { show(out.imp, err); }
+  });
+
+  document.getElementById("tasksBtn").addEventListener("click", async () => {
+    try { show(out.imp, await api("/orders/import/tasks")); }
+    catch (err) { show(out.imp, err); }
+  });
+
+  document.getElementById("wsConnectBtn").addEventListener("click", () => {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      show(out.ws, "WS already connected");
+      return;
+    }
+    const protocol = location.protocol === "https:" ? "wss:" : "ws:";
+    ws = new WebSocket(`${protocol}//${location.host}/orders/import/tasks/ws`);
+    ws.onopen = () => show(out.ws, "WS connected");
+    ws.onmessage = (event) => {
+      try { show(out.ws, JSON.parse(event.data)); }
+      catch (_) { show(out.ws, event.data); }
+    };
+    ws.onerror = () => show(out.ws, "WS error");
+    ws.onclose = (event) => show(out.ws, `WS closed: code=${event.code} reason=${event.reason || "-"}`);
+  });
+
+  document.getElementById("wsCloseBtn").addEventListener("click", () => {
+    if (ws) ws.close();
+  });
+</script>
+</body>
+</html>

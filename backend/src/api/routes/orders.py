@@ -3,6 +3,7 @@ import csv
 import io
 from datetime import date, datetime, time, timedelta
 from decimal import Decimal, ROUND_HALF_UP
+from urllib.parse import unquote, urlsplit
 from uuid import uuid4
 
 from fastapi import (
@@ -113,7 +114,7 @@ async def import_orders_csv(
 
     task = await FileTask.create(
         user=current_user,
-        file_path=f"{storage.bucket}/{object_name}",
+        file_path=storage.object_url(object_name),
         successful_rows=0,
         failed_rows=0,
         status=FILE_TASK_STATUS_IN_PROGRESS,
@@ -540,4 +541,12 @@ def _extract_object_name(file_path: str, bucket: str) -> str:
     prefix = f"{bucket}/"
     if file_path.startswith(prefix):
         return file_path[len(prefix) :]
+
+    parsed = urlsplit(file_path)
+    if parsed.scheme and parsed.netloc:
+        path = unquote(parsed.path.lstrip("/"))
+        if path.startswith(prefix):
+            return path[len(prefix) :]
+        return path
+
     return file_path

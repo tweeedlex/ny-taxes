@@ -77,6 +77,10 @@ docker compose up --build
 - `http://localhost:8000`
 - Swagger: `http://localhost:8000/docs`
 - Приклад статики: `http://localhost:8000/static/example.txt`
+- Мінімальний frontend: `http://localhost:8000/static/index.html`
+
+Для правильного `file_path` у import tasks (повний URL до MinIO) використовуй
+`MINIO_PUBLIC_BASE_URL` (наприклад `http://localhost:9000`).
 
 ## Authorities і доступ
 
