@@ -77,9 +77,12 @@ async def calculate_order_tax(
             detail=str(exc),
         ) from exc
 
-    await Order.create(user=current_user, **computed)
+    order = await Order.create(user=current_user, **computed)
 
     return OrderTaxCalculationResponse(
+        order_id=order.id,
+        author_user_id=order.user_id,
+        author_login=current_user.login,
         composite_tax_rate=float(computed["composite_tax_rate"]),
         tax_amount=float(computed["tax_amount"]),
         total_amount=float(computed["total_amount"]),
@@ -141,7 +144,7 @@ async def list_orders(
     subtotal_max: Decimal | None = Query(default=None, ge=Decimal("0.00")),
     _: User = Depends(require_authority(READ_ORDERS)),
 ) -> OrdersListResponse:
-    query = Order.all()
+    query = Order.all().prefetch_related("user")
 
     if zip_code is not None:
         query = query.filter(zip_code=_normalize_zip(zip_code))
@@ -332,8 +335,13 @@ def _daterange(start_date: date, end_date: date) -> list[date]:
 
 
 def _to_order_read(order: Order) -> OrderRead:
+    author_login = None
+    if getattr(order, "user", None) is not None:
+        author_login = order.user.login
     return OrderRead(
         id=order.id,
+        author_user_id=order.user_id,
+        author_login=author_login,
         latitude=order.latitude,
         longitude=order.longitude,
         subtotal=float(order.subtotal),

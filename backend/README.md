@@ -87,6 +87,7 @@ docker compose up --build
 - `GET /users`, `GET /users/{id}` потребують `read_users`.
 - `POST /users`, `PATCH /users/{id}`, `DELETE /users/{id}` потребують `edit_users`.
 - `POST /orders` потребує `edit_orders` і створює запис у таблиці `orders`.
+  - У відповіді повертає `order_id`, `author_user_id`, `author_login`.
 - `POST /orders/import` потребує `edit_orders`:
   - приймає CSV (multipart/form-data);
   - завантажує файл у MinIO;
@@ -96,6 +97,7 @@ docker compose up --build
 - `GET /orders` потребує `read_orders`.
   - Pagination: `limit`, `offset`
   - Filters: `zip_code`, `timestamp_from`, `timestamp_to`, `subtotal_min`, `subtotal_max`
+  - Для кожного елемента повертається автор: `author_user_id`, `author_login`.
 - `GET /orders/stats` потребує `read_orders`.
   - Query params: `from_date`, `to_date` у форматі `YYYY.MM.DD` (по полю `timestamp`)
   - Response: total за період + `daily` розбивка з тими ж метриками по днях

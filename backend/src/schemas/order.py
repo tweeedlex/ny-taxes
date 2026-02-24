@@ -21,6 +21,9 @@ class TaxBreakdownResponse(BaseModel):
 class OrderTaxCalculationResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
+    order_id: int
+    author_user_id: int | None
+    author_login: str | None
     composite_tax_rate: float
     tax_amount: float
     total_amount: float
@@ -31,6 +34,8 @@ class OrderRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
+    author_user_id: int | None
+    author_login: str | None
     latitude: float
     longitude: float
     subtotal: float
