@@ -10,6 +10,7 @@ from .core.bootstrap import ensure_bootstrap_admin
 from .core.config import settings
 from .core.database import close_db, init_db
 from .core.sessions import SessionManager
+from .services import TaxRateByZipService, ZipCodeByCoordinatesService
 
 
 @asynccontextmanager
@@ -27,6 +28,8 @@ async def lifespan(app: FastAPI):
         key_prefix=settings.session_key_prefix,
         ttl_seconds=settings.session_ttl_seconds,
     )
+    app.state.zip_code_service = ZipCodeByCoordinatesService()
+    app.state.tax_rate_service = TaxRateByZipService()
 
     await ensure_bootstrap_admin()
 

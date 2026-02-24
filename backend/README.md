@@ -13,6 +13,7 @@
   - `POST /auth/login`
   - `POST /auth/logout`
   - `GET /auth/me`
+  - `POST /orders` (розрахунок податку за координатами/ZIP)
   - `GET /static/*` для віддачі статичних файлів з `src/static`
   - CRUD `users` з перевіркою authorities.
 
@@ -22,6 +23,8 @@
 src/
   static/
     .gitkeep
+    ny_postcodes.shp
+    taxrates_zip_ny.csv
   api/
     routes/
       auth.py
@@ -40,6 +43,9 @@ src/
   schemas/
     auth.py
     user.py
+  services/
+    zip_code_service.py
+    tax_rate_service.py
   main.py
 ```
 
@@ -64,6 +70,7 @@ docker compose up --build
 
 - `GET /users`, `GET /users/{id}` потребують `read_users`.
 - `POST /users`, `PATCH /users/{id}`, `DELETE /users/{id}` потребують `edit_users`.
+- `POST /orders` потребує `edit_orders`.
 
 За замовчуванням доступний bootstrap-адмін (якщо задані змінні):
 - `BOOTSTRAP_ADMIN_LOGIN`

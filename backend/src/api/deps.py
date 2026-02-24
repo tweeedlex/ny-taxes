@@ -5,10 +5,19 @@ from fastapi import Depends, HTTPException, Request, status
 from ..core.config import settings
 from ..core.sessions import SessionManager
 from ..models.user import User
+from ..services import TaxRateByZipService, ZipCodeByCoordinatesService
 
 
 def get_session_manager(request: Request) -> SessionManager:
     return request.app.state.session_manager
+
+
+def get_zip_code_service(request: Request) -> ZipCodeByCoordinatesService:
+    return request.app.state.zip_code_service
+
+
+def get_tax_rate_service(request: Request) -> TaxRateByZipService:
+    return request.app.state.tax_rate_service
 
 
 async def get_current_user(
