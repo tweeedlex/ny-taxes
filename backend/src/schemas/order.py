@@ -25,3 +25,42 @@ class OrderTaxCalculationResponse(BaseModel):
     tax_amount: float
     total_amount: float
     breakdown: TaxBreakdownResponse
+
+
+class OrderRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    latitude: float
+    longitude: float
+    subtotal: float
+    timestamp: datetime
+    zip_code: str
+    composite_tax_rate: float
+    tax_amount: float
+    total_amount: float
+    breakdown: TaxBreakdownResponse
+    created_at: datetime
+
+
+class OrdersListResponse(BaseModel):
+    total: int
+    limit: int
+    offset: int
+    items: list[OrderRead]
+
+
+class OrdersStatsDay(BaseModel):
+    date: str
+    total_amount: float
+    total_tax_amount: float
+    total_orders: int
+
+
+class OrdersStatsResponse(BaseModel):
+    from_date: str
+    to_date: str
+    total_amount: float
+    total_tax_amount: float
+    total_orders: int
+    daily: list[OrdersStatsDay]

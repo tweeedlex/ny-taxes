@@ -8,12 +8,16 @@
 - ролеподібними authorities для доступу:
   - `read_users`
   - `edit_users`
+  - `read_orders`
+  - `edit_orders`
 - ендпойнтами:
   - `POST /auth/register`
   - `POST /auth/login`
   - `POST /auth/logout`
   - `GET /auth/me`
   - `POST /orders` (розрахунок податку за координатами/ZIP)
+  - `GET /orders` (список, pagination, filters)
+  - `GET /orders/stats` (агрегація за період з розбивкою по днях)
   - `GET /static/*` для віддачі статичних файлів з `src/static`
   - CRUD `users` з перевіркою authorities.
 
@@ -28,6 +32,7 @@ src/
   api/
     routes/
       auth.py
+      orders.py
       users.py
     deps.py
     router.py
@@ -39,9 +44,11 @@ src/
     security.py
     sessions.py
   models/
+    order.py
     user.py
   schemas/
     auth.py
+    order.py
     user.py
   services/
     zip_code_service.py
@@ -70,7 +77,13 @@ docker compose up --build
 
 - `GET /users`, `GET /users/{id}` потребують `read_users`.
 - `POST /users`, `PATCH /users/{id}`, `DELETE /users/{id}` потребують `edit_users`.
-- `POST /orders` потребує `edit_orders`.
+- `POST /orders` потребує `edit_orders` і створює запис у таблиці `orders`.
+- `GET /orders` потребує `read_orders`.
+  - Pagination: `limit`, `offset`
+  - Filters: `zip_code`, `timestamp_from`, `timestamp_to`, `subtotal_min`, `subtotal_max`
+- `GET /orders/stats` потребує `read_orders`.
+  - Query params: `from_date`, `to_date` у форматі `YYYY.MM.DD` (по полю `timestamp`)
+  - Response: total за період + `daily` розбивка з тими ж метриками по днях
 
 За замовчуванням доступний bootstrap-адмін (якщо задані змінні):
 - `BOOTSTRAP_ADMIN_LOGIN`

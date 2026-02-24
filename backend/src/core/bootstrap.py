@@ -1,4 +1,4 @@
-from .authorities import EDIT_ORDERS, EDIT_USERS, READ_USERS
+from .authorities import EDIT_ORDERS, EDIT_USERS, READ_ORDERS, READ_USERS
 from .config import settings
 from .security import hash_password
 from ..models.user import User
@@ -8,7 +8,7 @@ async def ensure_bootstrap_admin() -> None:
     if not settings.bootstrap_admin_login or not settings.bootstrap_admin_password:
         return
 
-    required_authorities = [READ_USERS, EDIT_USERS, EDIT_ORDERS]
+    required_authorities = [READ_USERS, EDIT_USERS, READ_ORDERS, EDIT_ORDERS]
     existing = await User.get_or_none(login=settings.bootstrap_admin_login)
     if existing:
         current_authorities = existing.authorities or []
