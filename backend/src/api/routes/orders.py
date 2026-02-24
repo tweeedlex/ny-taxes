@@ -385,7 +385,7 @@ def _compute_order_values(
     if zip_code is None:
         raise ValueError("Delivery point is outside New York State coverage.")
 
-    rates = tax_rate_service.get_tax_rate_breakdown(zip_code)
+    rates = tax_rate_service.get_tax_rate_breakdown(zip_code, timestamp=timestamp)
     if rates is None:
         raise LookupError(f"Tax rate not found for ZIP code {zip_code}.")
 

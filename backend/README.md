@@ -32,7 +32,9 @@ src/
   static/
     .gitkeep
     ny_postcodes.shp
-    taxrates_zip_ny.csv
+    ny_tax_rates/
+      2025-09.csv
+      ...
   api/
     routes/
       auth.py
@@ -95,6 +97,10 @@ docker compose up --build
 - `POST /users`, `PATCH /users/{id}`, `DELETE /users/{id}` потребують `edit_users`.
 - `POST /orders` потребує `edit_orders` і створює запис у таблиці `orders`.
   - У відповіді повертає `order_id`, `author_user_id`, `author_login`.
+  - Для розрахунку ставок використовується `timestamp`:
+    - береться CSV за відповідний місяць `YYYY-MM` з `static/ny_tax_rates`;
+    - якщо `timestamp` раніше мінімального доступного місяця -> `422`;
+    - якщо `timestamp` пізніше максимального доступного місяця -> використовується максимальний доступний місяць.
 - `POST /orders/import` потребує `edit_orders`:
   - приймає CSV (multipart/form-data);
   - завантажує файл у MinIO;
