@@ -1,7 +1,9 @@
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 import redis.asyncio as redis
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 
 from .api.router import api_router
 from .core.bootstrap import ensure_bootstrap_admin
@@ -37,6 +39,11 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title=settings.app_name, debug=settings.debug, lifespan=lifespan)
 app.include_router(api_router)
+app.mount(
+    "/static",
+    StaticFiles(directory=Path(__file__).resolve().parent / "static"),
+    name="static",
+)
 
 
 @app.get("/health")

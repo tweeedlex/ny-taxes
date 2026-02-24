@@ -13,12 +13,15 @@
   - `POST /auth/login`
   - `POST /auth/logout`
   - `GET /auth/me`
+  - `GET /static/*` для віддачі статичних файлів з `src/static`
   - CRUD `users` з перевіркою authorities.
 
 ## Структура
 
 ```text
 src/
+  static/
+    .gitkeep
   api/
     routes/
       auth.py
@@ -55,6 +58,7 @@ docker compose up --build
 3. API буде доступне на:
 - `http://localhost:8000`
 - Swagger: `http://localhost:8000/docs`
+- Приклад статики: `http://localhost:8000/static/example.txt`
 
 ## Authorities і доступ
 
@@ -76,4 +80,3 @@ pip install -r requirements.txt
 cp .env.example .env
 uvicorn src.main:app --reload
 ```
-
