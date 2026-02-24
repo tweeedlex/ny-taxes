@@ -85,6 +85,10 @@ docker compose up --build
 Для правильного `file_path` у import tasks (повний URL до MinIO) використовуй
 `MINIO_PUBLIC_BASE_URL` (наприклад `http://localhost:9000`).
 
+`docker-compose` також автоматично запускає `minio-init`, який:
+- створює bucket `MINIO_BUCKET` (якщо ще не існує),
+- виставляє для нього `anonymous download`.
+
 ## Authorities і доступ
 
 - `GET /users`, `GET /users/{id}` потребують `read_users`.
