@@ -37,6 +37,15 @@ class OrderTaxCalculationResponse(BaseModel):
     breakdown: TaxBreakdownResponse
 
 
+class OrderTaxPreviewResponse(BaseModel):
+    reporting_code: str
+    jurisdictions: dict[str, list[JurisdictionRateItem]]
+    composite_tax_rate: float
+    tax_amount: float
+    total_amount: float
+    breakdown: TaxBreakdownResponse
+
+
 class OrderRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
