@@ -18,6 +18,11 @@ class TaxBreakdownResponse(BaseModel):
     special_rates: float
 
 
+class JurisdictionRateItem(BaseModel):
+    name: str
+    rate: float
+
+
 class OrderTaxCalculationResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -25,7 +30,7 @@ class OrderTaxCalculationResponse(BaseModel):
     author_user_id: int | None
     author_login: str | None
     reporting_code: str
-    jurisdictions: dict[str, dict[str, float]]
+    jurisdictions: dict[str, list[JurisdictionRateItem]]
     composite_tax_rate: float
     tax_amount: float
     total_amount: float
@@ -43,7 +48,7 @@ class OrderRead(BaseModel):
     subtotal: float
     timestamp: datetime
     reporting_code: str
-    jurisdictions: dict[str, dict[str, float]]
+    jurisdictions: dict[str, list[JurisdictionRateItem]]
     composite_tax_rate: float
     tax_amount: float
     total_amount: float
@@ -80,6 +85,7 @@ class FileTaskRead(BaseModel):
     id: int
     user_id: int
     file_path: str
+    total_rows: int
     successful_rows: int
     failed_rows: int
     status: str

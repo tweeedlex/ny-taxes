@@ -6,6 +6,7 @@ class FileTask(Model):
     id = fields.IntField(pk=True)
     user = fields.ForeignKeyField("models.User", related_name="file_tasks")
     file_path = fields.CharField(max_length=512)
+    total_rows = fields.IntField(default=0)
     successful_rows = fields.IntField(default=0)
     failed_rows = fields.IntField(default=0)
     status = fields.CharField(max_length=32, index=True)
@@ -14,4 +15,3 @@ class FileTask(Model):
 
     class Meta:
         table = "file_tasks"
-

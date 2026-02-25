@@ -52,7 +52,7 @@ PARALLEL_IMPORT_THRESHOLD = 100
 PARALLEL_IMPORT_CHUNKS = 5
 IMPORT_BULK_INSERT_BATCH_SIZE = 500
 OrderComputedPayload = dict[
-    str, Decimal | float | datetime | str | dict[str, dict[str, float]]
+    str, Decimal | float | datetime | str | dict[str, list[dict[str, str | float]]]
 ]
 
 
@@ -123,6 +123,7 @@ async def import_orders_csv(
     filename = file.filename or "orders.csv"
     object_name = f"imports/{datetime.utcnow().strftime('%Y%m%d')}/{uuid4().hex}_{filename}"
     content = await file.read()
+    total_rows = _count_csv_rows(content)
 
     await asyncio.to_thread(
         storage.upload_bytes,
@@ -134,6 +135,7 @@ async def import_orders_csv(
     task = await FileTask.create(
         user=current_user,
         file_path=storage.object_url(object_name),
+        total_rows=total_rows,
         successful_rows=0,
         failed_rows=0,
         status=FILE_TASK_STATUS_IN_PROGRESS,
@@ -284,7 +286,7 @@ async def import_tasks_websocket(websocket: WebSocket) -> None:
             tasks = await FileTask.all().order_by("-id")
             payload = [_to_file_task_read(task).model_dump(mode="json") for task in tasks]
             await websocket.send_json({"tasks": payload})
-            await asyncio.sleep(1)
+            await asyncio.sleep(0.3)
     except WebSocketDisconnect:
         return
     except WebSocketException as exc:
@@ -379,12 +381,28 @@ def _to_file_task_read(task: FileTask) -> FileTaskRead:
         id=task.id,
         user_id=task.user_id,
         file_path=task.file_path,
+        total_rows=task.total_rows,
         successful_rows=task.successful_rows,
         failed_rows=task.failed_rows,
         status=task.status,
         created_at=task.created_at,
         updated_at=task.updated_at,
     )
+
+
+def _count_csv_rows(content: bytes) -> int:
+    try:
+        text = content.decode("utf-8-sig")
+    except UnicodeDecodeError:
+        return 0
+
+    reader = csv.reader(io.StringIO(text))
+    total = 0
+    for _ in reader:
+        total += 1
+    if total == 0:
+        return 0
+    return max(total - 1, 0)
 
 
 def _compute_order_values(

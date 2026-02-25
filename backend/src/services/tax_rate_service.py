@@ -3,8 +3,8 @@ from dataclasses import dataclass
 from pathlib import Path
 
 
-RateByJurisdiction = dict[str, float]
-JurisdictionsPayload = dict[str, RateByJurisdiction]
+JurisdictionRateItem = dict[str, str | float]
+JurisdictionsPayload = dict[str, list[JurisdictionRateItem]]
 
 
 @dataclass(frozen=True)
@@ -32,10 +32,10 @@ class TaxRateByReportingCodeService:
         if payload is None:
             return None
 
-        state_rate = round(sum(payload["state_rate"].values()), 5)
-        county_rate = round(sum(payload["county_rate"].values()), 5)
-        city_rate = round(sum(payload["city_rate"].values()), 5)
-        special_rates = round(sum(payload["special_rates"].values()), 5)
+        state_rate = round(self._sum_rates(payload["state_rate"]), 5)
+        county_rate = round(self._sum_rates(payload["county_rate"]), 5)
+        city_rate = round(self._sum_rates(payload["city_rate"]), 5)
+        special_rates = round(self._sum_rates(payload["special_rates"]), 5)
         composite_tax_rate = round(state_rate + county_rate + city_rate + special_rates, 5)
 
         return TaxRateBreakdown(
@@ -64,17 +64,58 @@ class TaxRateByReportingCodeService:
             raise ValueError(f"Invalid tax payload for reporting_code={code}.")
 
         categories = ("state_rate", "county_rate", "city_rate", "special_rates")
+        payload_keys = set(raw_payload.keys())
+        missing = [key for key in categories if key not in raw_payload]
+        if missing:
+            raise ValueError(
+                f"Missing sections {missing} for reporting_code={code}."
+            )
+        unknown = sorted(payload_keys.difference(categories))
+        if unknown:
+            raise ValueError(
+                f"Unknown sections {unknown} for reporting_code={code}."
+            )
+
         result: JurisdictionsPayload = {}
         for category in categories:
-            section = raw_payload.get(category, {})
-            if not isinstance(section, dict):
+            section = raw_payload.get(category)
+            if not isinstance(section, list):
                 raise ValueError(
-                    f"Tax payload section '{category}' must be an object for reporting_code={code}."
+                    f"Tax payload section '{category}' must be an array for reporting_code={code}."
                 )
-            result[category] = {
-                str(jurisdiction): float(rate) for jurisdiction, rate in section.items()
-            }
+            result[category] = self._parse_rate_items(items=section, code=code, category=category)
         return result
+
+    def _parse_rate_items(
+        self,
+        items: list[object],
+        code: str,
+        category: str,
+    ) -> list[JurisdictionRateItem]:
+        parsed: list[JurisdictionRateItem] = []
+        for idx, item in enumerate(items):
+            if not isinstance(item, dict):
+                raise ValueError(
+                    f"Item {idx} in '{category}' must be an object for reporting_code={code}."
+                )
+            if "name" not in item or "rate" not in item:
+                raise ValueError(
+                    f"Item {idx} in '{category}' must include 'name' and 'rate' "
+                    f"for reporting_code={code}."
+                )
+
+            name = str(item["name"]).strip()
+            if not name:
+                raise ValueError(
+                    f"Item {idx} in '{category}' has empty name for reporting_code={code}."
+                )
+            rate = float(item["rate"])
+            parsed.append({"name": name, "rate": rate})
+        return parsed
+
+    @staticmethod
+    def _sum_rates(items: list[JurisdictionRateItem]) -> float:
+        return sum(float(item["rate"]) for item in items)
 
     @staticmethod
     def _normalize_reporting_code(raw_code: str) -> str:
