@@ -7,6 +7,7 @@ from decimal import Decimal, ROUND_HALF_UP
 from urllib.parse import unquote, urlsplit
 from uuid import uuid4
 
+from pydantic import ValidationError
 from fastapi import (
     APIRouter,
     BackgroundTasks,
@@ -36,6 +37,7 @@ from src.schemas.order import (
     OrdersStatsDay,
     OrdersStatsResponse,
     OrderTaxCalculationResponse,
+    OrderTaxPreviewResponse,
     TaxBreakdownResponse,
 )
 from src.api.deps import (
@@ -297,6 +299,99 @@ async def import_tasks_websocket(websocket: WebSocket) -> None:
         await websocket.close(code=exc.code, reason=exc.reason)
 
 
+@router.websocket("/tax/ws")
+async def tax_preview_websocket(websocket: WebSocket) -> None:
+    await websocket.accept()
+    reporting_code_service = websocket.app.state.reporting_code_service
+    tax_rate_service = websocket.app.state.tax_rate_service
+
+    try:
+        while True:
+            try:
+                payload_raw = await websocket.receive_json()
+            except ValueError:
+                await websocket.send_json(
+                    {
+                        "ok": False,
+                        "error": {
+                            "code": "invalid_json",
+                            "detail": "Payload must be valid JSON object.",
+                        },
+                    }
+                )
+                continue
+
+            try:
+                payload = OrderCreateRequest.model_validate(payload_raw)
+            except ValidationError as exc:
+                await websocket.send_json(
+                    {
+                        "ok": False,
+                        "error": {
+                            "code": "validation_error",
+                            "detail": "Payload validation failed.",
+                            "fields": exc.errors(),
+                        },
+                    }
+                )
+                continue
+
+            try:
+                computed = _compute_order_values(
+                    latitude=payload.latitude,
+                    longitude=payload.longitude,
+                    timestamp=payload.timestamp,
+                    subtotal_raw=payload.subtotal,
+                    reporting_code_service=reporting_code_service,
+                    tax_rate_service=tax_rate_service,
+                )
+            except ValueError as exc:
+                await websocket.send_json(
+                    {
+                        "ok": False,
+                        "error": {
+                            "code": "outside_coverage",
+                            "detail": str(exc),
+                        },
+                    }
+                )
+                continue
+            except LookupError as exc:
+                await websocket.send_json(
+                    {
+                        "ok": False,
+                        "error": {
+                            "code": "tax_rate_not_found",
+                            "detail": str(exc),
+                        },
+                    }
+                )
+                continue
+            except Exception:
+                logger.exception("Tax preview websocket unexpected error")
+                await websocket.send_json(
+                    {
+                        "ok": False,
+                        "error": {
+                            "code": "internal_error",
+                            "detail": "Unexpected server error.",
+                        },
+                    }
+                )
+                continue
+
+            await websocket.send_json(
+                {
+                    "ok": True,
+                    "result": _to_order_tax_preview_response(computed).model_dump(
+                        mode="json"
+                    ),
+                }
+            )
+    except WebSocketDisconnect:
+        return
+
+
 async def resume_in_progress_import_tasks(
     storage: MinioStorage,
     reporting_code_service: ReportingCodeByCoordinatesService,
@@ -377,6 +472,28 @@ def _to_order_read(order: Order) -> OrderRead:
             special_rates=float(order.special_rates),
         ),
         created_at=order.created_at,
+    )
+
+
+def _to_order_tax_preview_response(
+    computed: OrderComputedPayload,
+) -> OrderTaxPreviewResponse:
+    jurisdictions = computed.get("jurisdictions")
+    if not isinstance(jurisdictions, dict):
+        jurisdictions = {}
+
+    return OrderTaxPreviewResponse(
+        reporting_code=str(computed["reporting_code"]),
+        jurisdictions=jurisdictions,
+        composite_tax_rate=float(computed["composite_tax_rate"]),
+        tax_amount=float(computed["tax_amount"]),
+        total_amount=float(computed["total_amount"]),
+        breakdown=TaxBreakdownResponse(
+            state_rate=float(computed["state_rate"]),
+            county_rate=float(computed["county_rate"]),
+            city_rate=float(computed["city_rate"]),
+            special_rates=float(computed["special_rates"]),
+        ),
     )
 
 

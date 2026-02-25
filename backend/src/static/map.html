@@ -1,0 +1,738 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NY Tax Map</title>
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""
+  />
+  <style>
+    :root {
+      --bg: #f3f5f7;
+      --card: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --border: #cbd5e1;
+      --accent: #0f766e;
+      --warn: #b91c1c;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      color: var(--text);
+      background: var(--bg);
+    }
+
+    main {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 16px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .toolbar {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+      display: grid;
+      gap: 10px;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      align-items: end;
+    }
+
+    label {
+      font-size: 13px;
+      color: var(--muted);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    input {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 10px;
+      font: inherit;
+      color: var(--text);
+      background: #fff;
+    }
+
+    .tax-preview {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .tax-preview h2 {
+      margin: 0;
+      font-size: 16px;
+    }
+
+    .tax-metrics {
+      display: grid;
+      gap: 8px;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    }
+
+    .tax-metric {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px;
+      background: #fff;
+    }
+
+    .tax-metric-label {
+      display: block;
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 3px;
+    }
+
+    .tax-metric-value {
+      display: block;
+      font-size: 17px;
+      font-weight: 600;
+      color: var(--accent);
+    }
+
+    .tax-grid {
+      display: grid;
+      gap: 10px;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    }
+
+    .tax-block {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px;
+      background: #fff;
+    }
+
+    .tax-block h3 {
+      margin: 0 0 8px;
+      font-size: 14px;
+    }
+
+    .tax-rows {
+      display: grid;
+      gap: 6px;
+    }
+
+    .tax-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 6px 8px;
+      border-radius: 6px;
+      background: #f8fafc;
+      font-size: 13px;
+    }
+
+    .tax-row-label {
+      color: var(--muted);
+    }
+
+    .tax-row-value {
+      font-weight: 600;
+    }
+
+    .jurisdiction-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .jurisdiction-group {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #f8fafc;
+      padding: 8px;
+      display: grid;
+      gap: 6px;
+    }
+
+    .jurisdiction-title {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: #0f766e;
+      font-weight: 700;
+    }
+
+    .jurisdiction-item {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 5px 6px;
+      border-radius: 6px;
+      background: #ffffff;
+      font-size: 13px;
+    }
+
+    .jurisdiction-name {
+      color: #111827;
+    }
+
+    .jurisdiction-rate {
+      color: #0f766e;
+      font-weight: 700;
+    }
+
+    .tax-error {
+      color: var(--warn);
+      font-size: 13px;
+      margin-top: 4px;
+    }
+
+    details summary {
+      cursor: pointer;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    #map {
+      height: 65vh;
+      min-height: 480px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .panel {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+    }
+
+    .panel h2 {
+      margin: 0 0 8px;
+      font-size: 16px;
+    }
+
+    .hint {
+      margin: 0 0 8px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    pre {
+      margin: 0;
+      background: #0b1220;
+      color: #d8e4ff;
+      border-radius: 8px;
+      padding: 12px;
+      overflow: auto;
+      max-height: 280px;
+      font-size: 12px;
+      line-height: 1.35;
+    }
+  </style>
+</head>
+<body>
+<main>
+  <section class="toolbar">
+    <label>
+      Latitude
+      <input id="latitude" type="number" step="any" placeholder="e.g. 42.4789958" />
+    </label>
+    <label>
+      Longitude
+      <input id="longitude" type="number" step="any" placeholder="e.g. -76.2653141" />
+    </label>
+    <label>
+      Subtotal
+      <input id="subtotal" type="number" step="0.01" min="0" value="100" placeholder="e.g. 120.00" />
+    </label>
+  </section>
+
+  <section class="tax-preview">
+    <h2>Tax Preview</h2>
+    <p class="hint">
+      Click the map or edit latitude/longitude. Subtotal is editable, timestamp is current time.
+    </p>
+
+    <div class="tax-metrics">
+      <div class="tax-metric">
+        <span class="tax-metric-label">Reporting code</span>
+        <span id="taxReportingCode" class="tax-metric-value">-</span>
+      </div>
+      <div class="tax-metric">
+        <span class="tax-metric-label">Composite tax rate</span>
+        <span id="taxCompositeRate" class="tax-metric-value">-</span>
+      </div>
+      <div class="tax-metric">
+        <span class="tax-metric-label">Tax amount</span>
+        <span id="taxAmount" class="tax-metric-value">-</span>
+      </div>
+      <div class="tax-metric">
+        <span class="tax-metric-label">Total amount</span>
+        <span id="taxTotalAmount" class="tax-metric-value">-</span>
+      </div>
+    </div>
+
+    <div class="tax-grid">
+      <div class="tax-block">
+        <h3>Breakdown</h3>
+        <div id="taxBreakdown" class="tax-rows"></div>
+      </div>
+      <div class="tax-block">
+        <h3>Jurisdictions</h3>
+        <div id="taxJurisdictions" class="tax-rows"></div>
+      </div>
+    </div>
+
+    <div id="taxError" class="tax-error"></div>
+    <details>
+      <summary>Raw WS payload</summary>
+      <pre id="taxOutput">No data</pre>
+    </details>
+  </section>
+
+  <div id="map"></div>
+</main>
+
+<script
+  src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+  integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+  crossorigin=""
+></script>
+<script src="https://unpkg.com/proj4@2.11.0/dist/proj4.js"></script>
+<script src="https://unpkg.com/shpjs@latest/dist/shp.min.js"></script>
+<script>
+  const latInput = document.getElementById("latitude");
+  const lonInput = document.getElementById("longitude");
+  const subtotalInput = document.getElementById("subtotal");
+  const taxOutput = document.getElementById("taxOutput");
+  const taxError = document.getElementById("taxError");
+  const taxReportingCode = document.getElementById("taxReportingCode");
+  const taxCompositeRate = document.getElementById("taxCompositeRate");
+  const taxAmount = document.getElementById("taxAmount");
+  const taxTotalAmount = document.getElementById("taxTotalAmount");
+  const taxBreakdown = document.getElementById("taxBreakdown");
+  const taxJurisdictions = document.getElementById("taxJurisdictions");
+  const DEFAULT_PREVIEW_SUBTOTAL = 100;
+  const WS_RECONNECT_MS = 1500;
+
+  if (!window.L || !window.proj4 || !window.shp) {
+    taxError.textContent = "Map dependencies failed to load (Leaflet/proj4/shpjs).";
+    setOutput({
+      error: "Failed to initialize map dependencies.",
+      detail: "Check network access to unpkg.com or use local JS assets.",
+    });
+  } else {
+  proj4.defs(
+    "EPSG:26918",
+    "+proj=utm +zone=18 +datum=NAD83 +units=m +no_defs +type=crs"
+  );
+
+  const map = L.map("map", { preferCanvas: true }).setView([42.95, -75.6], 7);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 19,
+    attribution: "&copy; OpenStreetMap contributors",
+  }).addTo(map);
+
+  let clickMarker = null;
+  let ws = null;
+  let queuedPayload = null;
+
+  function setOutput(payload) {
+    taxOutput.textContent = JSON.stringify(payload, null, 2);
+  }
+
+  function formatMoney(value) {
+    const num = Number(value);
+    if (!Number.isFinite(num)) return "-";
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(num);
+  }
+
+  function formatRate(value) {
+    const num = Number(value);
+    if (!Number.isFinite(num)) return "-";
+    return `${(num * 100).toFixed(3).replace(/\.?0+$/, "")}%`;
+  }
+
+  function renderRows(container, rows) {
+    container.innerHTML = "";
+    if (!rows.length) {
+      const empty = document.createElement("div");
+      empty.className = "tax-row";
+      empty.innerHTML = '<span class="tax-row-label">No data</span><span class="tax-row-value">-</span>';
+      container.appendChild(empty);
+      return;
+    }
+    for (const row of rows) {
+      const rowEl = document.createElement("div");
+      rowEl.className = "tax-row";
+      const labelEl = document.createElement("span");
+      labelEl.className = "tax-row-label";
+      labelEl.textContent = row.label;
+      const valueEl = document.createElement("span");
+      valueEl.className = "tax-row-value";
+      valueEl.textContent = row.value;
+      rowEl.appendChild(labelEl);
+      rowEl.appendChild(valueEl);
+      container.appendChild(rowEl);
+    }
+  }
+
+  function resetPrettyPreview() {
+    taxReportingCode.textContent = "-";
+    taxCompositeRate.textContent = "-";
+    taxAmount.textContent = "-";
+    taxTotalAmount.textContent = "-";
+    renderRows(taxBreakdown, []);
+    taxJurisdictions.innerHTML = "";
+  }
+
+  function renderJurisdictions(jurisdictions) {
+    const labels = {
+      state_rate: "State Jurisdiction",
+      county_rate: "County Jurisdiction",
+      city_rate: "City Jurisdiction",
+      special_rates: "Special Jurisdiction",
+    };
+    const orderedKeys = ["state_rate", "county_rate", "city_rate", "special_rates"];
+
+    taxJurisdictions.innerHTML = "";
+    const wrapper = document.createElement("div");
+    wrapper.className = "jurisdiction-list";
+
+    let hasAny = false;
+    for (const key of orderedKeys) {
+      const items = Array.isArray(jurisdictions[key]) ? jurisdictions[key] : [];
+      if (!items.length) continue;
+      hasAny = true;
+
+      const group = document.createElement("div");
+      group.className = "jurisdiction-group";
+
+      const title = document.createElement("div");
+      title.className = "jurisdiction-title";
+      title.textContent = labels[key] || key;
+      group.appendChild(title);
+
+      for (const item of items) {
+        const row = document.createElement("div");
+        row.className = "jurisdiction-item";
+
+        const name = document.createElement("span");
+        name.className = "jurisdiction-name";
+        name.textContent = item && item.name ? item.name : "-";
+
+        const rate = document.createElement("span");
+        rate.className = "jurisdiction-rate";
+        rate.textContent = formatRate(item && item.rate);
+
+        row.appendChild(name);
+        row.appendChild(rate);
+        group.appendChild(row);
+      }
+
+      wrapper.appendChild(group);
+    }
+
+    if (!hasAny) {
+      const empty = document.createElement("div");
+      empty.className = "tax-row";
+      empty.innerHTML = '<span class="tax-row-label">No jurisdictions applied</span><span class="tax-row-value">-</span>';
+      taxJurisdictions.appendChild(empty);
+      return;
+    }
+
+    taxJurisdictions.appendChild(wrapper);
+  }
+
+  function updatePrettyPreview(data) {
+    taxError.textContent = "";
+    if (!data || data.ok !== true || !data.result) {
+      resetPrettyPreview();
+      if (data && data.error && data.error.detail) {
+        taxError.textContent = data.error.detail;
+      }
+      return;
+    }
+
+    const result = data.result;
+    taxReportingCode.textContent = result.reporting_code || "-";
+    taxCompositeRate.textContent = formatRate(result.composite_tax_rate);
+    taxAmount.textContent = formatMoney(result.tax_amount);
+    taxTotalAmount.textContent = formatMoney(result.total_amount);
+
+    const breakdown = result.breakdown || {};
+    renderRows(taxBreakdown, [
+      { label: "State rate", value: formatRate(breakdown.state_rate) },
+      { label: "County rate", value: formatRate(breakdown.county_rate) },
+      { label: "City rate", value: formatRate(breakdown.city_rate) },
+      { label: "Special rates", value: formatRate(breakdown.special_rates) },
+    ]);
+
+    const jurisdictions = result.jurisdictions || {};
+    renderJurisdictions(jurisdictions);
+  }
+
+  function normalizeFeatureCollections(raw) {
+    if (!raw) return [];
+    if (raw.type === "FeatureCollection") return [raw];
+    if (Array.isArray(raw)) {
+      return raw.filter((entry) => entry && entry.type === "FeatureCollection");
+    }
+    if (typeof raw === "object") {
+      return Object.values(raw).filter(
+        (entry) => entry && entry.type === "FeatureCollection"
+      );
+    }
+    return [];
+  }
+
+  function transformCoordinates(coords, converter) {
+    if (!Array.isArray(coords)) return coords;
+    if (coords.length === 0) return coords;
+    if (typeof coords[0] === "number" && typeof coords[1] === "number") {
+      return converter(coords);
+    }
+    return coords.map((child) => transformCoordinates(child, converter));
+  }
+
+  function convertGeoJsonToWgs84IfNeeded(featureCollection) {
+    let needsProjection = false;
+
+    for (const feature of featureCollection.features || []) {
+      const geometry = feature && feature.geometry;
+      if (!geometry || !Array.isArray(geometry.coordinates)) continue;
+
+      const queue = [geometry.coordinates];
+      while (queue.length > 0) {
+        const item = queue.pop();
+        if (!Array.isArray(item) || item.length === 0) continue;
+        if (typeof item[0] === "number" && typeof item[1] === "number") {
+          const x = item[0];
+          const y = item[1];
+          if (Math.abs(x) > 180 || Math.abs(y) > 90) {
+            needsProjection = true;
+          }
+          break;
+        }
+        for (const nested of item) queue.push(nested);
+      }
+      if (needsProjection) break;
+    }
+
+    if (!needsProjection) return featureCollection;
+
+    return {
+      ...featureCollection,
+      features: (featureCollection.features || []).map((feature) => {
+        const geometry = feature && feature.geometry;
+        if (!geometry || !Array.isArray(geometry.coordinates)) return feature;
+        return {
+          ...feature,
+          geometry: {
+            ...geometry,
+            coordinates: transformCoordinates(geometry.coordinates, (coord) => {
+              const wgs84 = proj4("EPSG:26918", "EPSG:4326", coord);
+              return [wgs84[0], wgs84[1]];
+            }),
+          },
+        };
+      }),
+    };
+  }
+
+  async function loadShapefileLayer(baseName, style) {
+    const shpUrl = new URL(`./shapefiles/${baseName}.shp`, window.location.href).href;
+    const raw = await shp(shpUrl);
+    const collections = normalizeFeatureCollections(raw).map(
+      convertGeoJsonToWgs84IfNeeded
+    );
+    const allLayers = [];
+    for (const collection of collections) {
+      const layer = L.geoJSON(collection, { style }).addTo(map);
+      allLayers.push(layer);
+    }
+    return allLayers;
+  }
+
+  async function loadBoundaryLayers() {
+    try {
+      const layerGroups = await Promise.all([
+        loadShapefileLayer("Counties", {
+          color: "#1d4ed8",
+          weight: 1.3,
+          fillColor: "#93c5fd",
+          fillOpacity: 0.08,
+        }),
+        loadShapefileLayer("Cities", {
+          color: "#ea580c",
+          weight: 1,
+          fillColor: "#fdba74",
+          fillOpacity: 0.2,
+        }),
+      ]);
+
+      const bounds = L.latLngBounds([]);
+      for (const group of layerGroups) {
+        for (const layer of group) {
+          if (layer.getBounds && layer.getBounds().isValid()) {
+            bounds.extend(layer.getBounds());
+          }
+        }
+      }
+      if (bounds.isValid()) {
+        map.fitBounds(bounds, { padding: [20, 20] });
+      }
+    } catch (error) {
+      setOutput({
+        error: "Failed to load shapefiles",
+        detail: String(error),
+      });
+    }
+  }
+
+  function setMarker(lat, lon) {
+    const latLng = [lat, lon];
+    if (clickMarker) {
+      clickMarker.setLatLng(latLng);
+      return;
+    }
+    clickMarker = L.circleMarker(latLng, {
+      radius: 7,
+      color: "#ffffff",
+      weight: 2,
+      fillColor: "#e11d48",
+      fillOpacity: 0.95,
+    }).addTo(map);
+  }
+
+  function buildPayload(lat, lon) {
+    const subtotalRaw = parseInputNumber(subtotalInput);
+    const subtotal = subtotalRaw !== null && subtotalRaw >= 0
+      ? Number(subtotalRaw.toFixed(2))
+      : DEFAULT_PREVIEW_SUBTOTAL;
+    return {
+      latitude: lat,
+      longitude: lon,
+      subtotal,
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  function sendTaxPreview(lat, lon) {
+    const payload = buildPayload(lat, lon);
+    queuedPayload = payload;
+
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+      const waitingPayload = {
+        info: "Waiting for websocket connection...",
+        request: payload,
+      };
+      setOutput(waitingPayload);
+      updatePrettyPreview(waitingPayload);
+      return;
+    }
+
+    ws.send(JSON.stringify(payload));
+  }
+
+  function handleCoordinates(lat, lon, shouldCenter) {
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) return;
+    if (lat < -90 || lat > 90 || lon < -180 || lon > 180) return;
+
+    setMarker(lat, lon);
+    if (shouldCenter) {
+      map.panTo([lat, lon], { animate: true });
+    }
+    sendTaxPreview(lat, lon);
+  }
+
+  function parseInputNumber(input) {
+    const value = input.value.trim();
+    if (!value) return null;
+    const num = Number(value);
+    return Number.isFinite(num) ? num : null;
+  }
+
+  function debounce(fn, delayMs) {
+    let timer = null;
+    return (...args) => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => fn(...args), delayMs);
+    };
+  }
+
+  function connectWs() {
+    const protocol = location.protocol === "https:" ? "wss:" : "ws:";
+    const url = `${protocol}//${location.host}/orders/tax/ws`;
+    ws = new WebSocket(url);
+
+    ws.onopen = () => {
+      taxError.textContent = "";
+      if (queuedPayload) {
+        ws.send(JSON.stringify(queuedPayload));
+      }
+    };
+
+    ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        setOutput(data);
+        updatePrettyPreview(data);
+      } catch (_) {
+        const rawPayload = { raw: event.data };
+        setOutput(rawPayload);
+        updatePrettyPreview(rawPayload);
+      }
+    };
+
+    ws.onerror = () => {
+      taxError.textContent = "WebSocket error.";
+    };
+
+    ws.onclose = () => {
+      taxError.textContent = "WebSocket disconnected. Reconnecting...";
+      setTimeout(connectWs, WS_RECONNECT_MS);
+    };
+  }
+
+  const onInputChanged = debounce(() => {
+    const lat = parseInputNumber(latInput);
+    const lon = parseInputNumber(lonInput);
+    if (lat === null || lon === null) return;
+    handleCoordinates(lat, lon, true);
+  }, 250);
+
+  latInput.addEventListener("input", onInputChanged);
+  lonInput.addEventListener("input", onInputChanged);
+  subtotalInput.addEventListener("input", onInputChanged);
+
+  map.on("click", (event) => {
+    const lat = Number(event.latlng.lat.toFixed(8));
+    const lon = Number(event.latlng.lng.toFixed(8));
+    latInput.value = String(lat);
+    lonInput.value = String(lon);
+    handleCoordinates(lat, lon, false);
+  });
+
+  loadBoundaryLayers();
+  resetPrettyPreview();
+  connectWs();
+  }
+</script>
+</body>
+</html>
