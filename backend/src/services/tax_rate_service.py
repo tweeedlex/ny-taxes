@@ -1,114 +1,86 @@
-import csv
+import json
 from dataclasses import dataclass
-from datetime import datetime
 from pathlib import Path
+
+
+RateByJurisdiction = dict[str, float]
+JurisdictionsPayload = dict[str, RateByJurisdiction]
 
 
 @dataclass(frozen=True)
 class TaxRateBreakdown:
-    state: str
-    zip_code: str
-    tax_region_name: str
-    estimated_combined_rate: float
+    reporting_code: str
+    jurisdictions: JurisdictionsPayload
     state_rate: float
-    estimated_county_rate: float
-    estimated_city_rate: float
-    estimated_special_rate: float
-    risk_level: int
+    county_rate: float
+    city_rate: float
+    special_rates: float
+    composite_tax_rate: float
 
 
-class TaxRateByZipService:
-    def __init__(self, rates_dir: Path | None = None) -> None:
+class TaxRateByReportingCodeService:
+    def __init__(self, rates_path: Path | None = None) -> None:
         base_dir = Path(__file__).resolve().parent.parent
-        self._rates_dir = rates_dir or (base_dir / "static" / "ny_tax_rates")
-        if not self._rates_dir.exists() or not self._rates_dir.is_dir():
-            raise FileNotFoundError(f"Tax rates directory not found: {self._rates_dir}")
+        self._rates_path = rates_path or (base_dir / "static" / "ny_tax_rates.json")
+        if not self._rates_path.exists():
+            raise FileNotFoundError(f"Tax rates file not found: {self._rates_path}")
+        self._rates_by_code = self._load_rates()
 
-        self._rate_files = self._discover_rate_files()
-        if not self._rate_files:
-            raise FileNotFoundError(f"No monthly tax rates CSV found in: {self._rates_dir}")
+    def get_tax_rate_breakdown(self, reporting_code: str) -> TaxRateBreakdown | None:
+        normalized_code = self._normalize_reporting_code(reporting_code)
+        payload = self._rates_by_code.get(normalized_code)
+        if payload is None:
+            return None
 
-        month_keys = sorted(self._rate_files.keys())
-        self._min_month_key = month_keys[0]
-        self._max_month_key = month_keys[-1]
-        self._cache: dict[tuple[int, int], dict[str, TaxRateBreakdown]] = {}
+        state_rate = round(sum(payload["state_rate"].values()), 5)
+        county_rate = round(sum(payload["county_rate"].values()), 5)
+        city_rate = round(sum(payload["city_rate"].values()), 5)
+        special_rates = round(sum(payload["special_rates"].values()), 5)
+        composite_tax_rate = round(state_rate + county_rate + city_rate + special_rates, 5)
 
-    def get_tax_rate_breakdown(self, zip_code: str, timestamp: datetime) -> TaxRateBreakdown | None:
-        normalized_zip = self._normalize_zip(zip_code)
-        month_key = self._resolve_month_key(timestamp)
-        rates_by_zip = self._get_rates_by_zip_for_month(month_key)
-        return rates_by_zip.get(normalized_zip)
+        return TaxRateBreakdown(
+            reporting_code=normalized_code,
+            jurisdictions=payload,
+            state_rate=state_rate,
+            county_rate=county_rate,
+            city_rate=city_rate,
+            special_rates=special_rates,
+            composite_tax_rate=composite_tax_rate,
+        )
 
-    def _get_rates_by_zip_for_month(self, month_key: tuple[int, int]) -> dict[str, TaxRateBreakdown]:
-        cached = self._cache.get(month_key)
-        if cached is not None:
-            return cached
+    def _load_rates(self) -> dict[str, JurisdictionsPayload]:
+        raw = json.loads(self._rates_path.read_text(encoding="utf-8"))
+        if not isinstance(raw, dict):
+            raise ValueError("Tax rates JSON root must be an object.")
 
-        file_path = self._rate_files[month_key]
-        loaded = self._load_rates(file_path)
-        self._cache[month_key] = loaded
-        return loaded
+        rates_by_code: dict[str, JurisdictionsPayload] = {}
+        for raw_code, raw_payload in raw.items():
+            code = self._normalize_reporting_code(str(raw_code))
+            rates_by_code[code] = self._parse_rate_payload(raw_payload, code)
+        return rates_by_code
 
-    def _load_rates(self, csv_path: Path) -> dict[str, TaxRateBreakdown]:
-        rates_by_zip: dict[str, TaxRateBreakdown] = {}
-        with csv_path.open("r", encoding="utf-8", newline="") as file:
-            reader = csv.DictReader(file)
-            for row in reader:
-                zip_code = self._normalize_zip(row["ZipCode"])
-                rates_by_zip[zip_code] = TaxRateBreakdown(
-                    state=row["State"].strip(),
-                    zip_code=zip_code,
-                    tax_region_name=row["TaxRegionName"].strip(),
-                    estimated_combined_rate=float(row["EstimatedCombinedRate"]),
-                    state_rate=float(row["StateRate"]),
-                    estimated_county_rate=float(row["EstimatedCountyRate"]),
-                    estimated_city_rate=float(row["EstimatedCityRate"]),
-                    estimated_special_rate=float(row["EstimatedSpecialRate"]),
-                    risk_level=int(row["RiskLevel"]),
+    def _parse_rate_payload(self, raw_payload: object, code: str) -> JurisdictionsPayload:
+        if not isinstance(raw_payload, dict):
+            raise ValueError(f"Invalid tax payload for reporting_code={code}.")
+
+        categories = ("state_rate", "county_rate", "city_rate", "special_rates")
+        result: JurisdictionsPayload = {}
+        for category in categories:
+            section = raw_payload.get(category, {})
+            if not isinstance(section, dict):
+                raise ValueError(
+                    f"Tax payload section '{category}' must be an object for reporting_code={code}."
                 )
-        return rates_by_zip
-
-    def _discover_rate_files(self) -> dict[tuple[int, int], Path]:
-        result: dict[tuple[int, int], Path] = {}
-        for csv_file in self._rates_dir.glob("*.csv"):
-            try:
-                month = datetime.strptime(csv_file.stem, "%Y-%m")
-            except ValueError:
-                continue
-            result[(month.year, month.month)] = csv_file
-        return dict(sorted(result.items(), key=lambda item: item[0]))
-
-    def _resolve_month_key(self, timestamp: datetime) -> tuple[int, int]:
-        target = (timestamp.year, timestamp.month)
-        if target < self._min_month_key:
-            raise ValueError(
-                f"Timestamp month {self._month_to_str(target)} is earlier than minimum "
-                f"available month {self._month_to_str(self._min_month_key)}."
-            )
-        if target > self._max_month_key:
-            return self._max_month_key
-        if target in self._rate_files:
-            return target
-
-        # If a specific month file is missing in the middle of the range,
-        # fallback to the latest available month not later than requested.
-        available = [month for month in self._rate_files.keys() if month <= target]
-        if not available:
-            raise ValueError("No tax rate month available for provided timestamp.")
-        return max(available)
+            result[category] = {
+                str(jurisdiction): float(rate) for jurisdiction, rate in section.items()
+            }
+        return result
 
     @staticmethod
-    def _month_to_str(month_key: tuple[int, int]) -> str:
-        year, month = month_key
-        return f"{year:04d}-{month:02d}"
-
-    @staticmethod
-    def _normalize_zip(zip_code: str) -> str:
-        normalized = zip_code.strip()
-        if not normalized:
-            raise ValueError("ZIP code cannot be empty.")
-        if not normalized.isdigit():
-            raise ValueError("ZIP code must contain only digits.")
-        if len(normalized) > 5:
-            raise ValueError("ZIP code must have at most 5 digits.")
-        return normalized.zfill(5)
+    def _normalize_reporting_code(raw_code: str) -> str:
+        value = raw_code.strip()
+        if not value:
+            raise ValueError("Reporting code cannot be empty.")
+        if value.isdigit() and len(value) <= 4:
+            return value.zfill(4)
+        return value

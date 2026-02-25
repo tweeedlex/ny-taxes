@@ -16,7 +16,8 @@ class Order(Model):
     subtotal = fields.DecimalField(max_digits=12, decimal_places=2)
     timestamp = fields.DatetimeField()
 
-    zip_code = fields.CharField(max_length=5, index=True)
+    reporting_code = fields.CharField(max_length=32, index=True)
+    jurisdictions = fields.JSONField()
     composite_tax_rate = fields.DecimalField(max_digits=7, decimal_places=5)
     tax_amount = fields.DecimalField(max_digits=12, decimal_places=2)
     total_amount = fields.DecimalField(max_digits=12, decimal_places=2)
@@ -31,6 +32,6 @@ class Order(Model):
     class Meta:
         table = "orders"
         indexes = (
-            ("zip_code", "timestamp"),
+            ("reporting_code", "timestamp"),
             ("timestamp",),
         )

@@ -6,18 +6,18 @@ from src.core.config import settings
 from src.core.sessions import SessionManager
 from src.core.storage import MinioStorage
 from src.models.user import User
-from src.services import TaxRateByZipService, ZipCodeByCoordinatesService
+from src.services import TaxRateByReportingCodeService, ReportingCodeByCoordinatesService
 
 
 def get_session_manager(request: Request) -> SessionManager:
     return request.app.state.session_manager
 
 
-def get_zip_code_service(request: Request) -> ZipCodeByCoordinatesService:
-    return request.app.state.zip_code_service
+def get_reporting_code_service(request: Request) -> ReportingCodeByCoordinatesService:
+    return request.app.state.reporting_code_service
 
 
-def get_tax_rate_service(request: Request) -> TaxRateByZipService:
+def get_tax_rate_service(request: Request) -> TaxRateByReportingCodeService:
     return request.app.state.tax_rate_service
 
 

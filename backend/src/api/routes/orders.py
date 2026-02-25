@@ -25,7 +25,7 @@ from src.core.storage import MinioStorage
 from src.models.file_task import FileTask
 from src.models.order import Order
 from src.models.user import User
-from src.services import TaxRateByZipService, ZipCodeByCoordinatesService
+from src.services import TaxRateByReportingCodeService, ReportingCodeByCoordinatesService
 from src.schemas.order import (
     FileTaskRead,
     OrderCreateRequest,
@@ -40,7 +40,7 @@ from src.schemas.order import (
 from src.api.deps import (
     get_storage,
     get_tax_rate_service,
-    get_zip_code_service,
+    get_reporting_code_service,
     require_authority,
     require_websocket_authority,
 )
@@ -51,14 +51,19 @@ FILE_TASK_STATUS_COMPLETED = "completed"
 PARALLEL_IMPORT_THRESHOLD = 100
 PARALLEL_IMPORT_CHUNKS = 5
 IMPORT_BULK_INSERT_BATCH_SIZE = 500
+OrderComputedPayload = dict[
+    str, Decimal | float | datetime | str | dict[str, dict[str, float]]
+]
 
 
 @router.post("", response_model=OrderTaxCalculationResponse)
 async def calculate_order_tax(
     payload: OrderCreateRequest,
     current_user: User = Depends(require_authority(EDIT_ORDERS)),
-    zip_service: ZipCodeByCoordinatesService = Depends(get_zip_code_service),
-    tax_rate_service: TaxRateByZipService = Depends(get_tax_rate_service),
+    reporting_code_service: ReportingCodeByCoordinatesService = Depends(
+        get_reporting_code_service
+    ),
+    tax_rate_service: TaxRateByReportingCodeService = Depends(get_tax_rate_service),
 ) -> OrderTaxCalculationResponse:
     try:
         computed = _compute_order_values(
@@ -66,7 +71,7 @@ async def calculate_order_tax(
             longitude=payload.longitude,
             timestamp=payload.timestamp,
             subtotal_raw=payload.subtotal,
-            zip_service=zip_service,
+            reporting_code_service=reporting_code_service,
             tax_rate_service=tax_rate_service,
         )
     except ValueError as exc:
@@ -82,10 +87,16 @@ async def calculate_order_tax(
 
     order = await Order.create(user=current_user, **computed)
 
+    jurisdictions = computed.get("jurisdictions")
+    if not isinstance(jurisdictions, dict):
+        jurisdictions = {}
+
     return OrderTaxCalculationResponse(
         order_id=order.id,
         author_user_id=order.user_id,
         author_login=current_user.login,
+        reporting_code=str(computed["reporting_code"]),
+        jurisdictions=jurisdictions,
         composite_tax_rate=float(computed["composite_tax_rate"]),
         tax_amount=float(computed["tax_amount"]),
         total_amount=float(computed["total_amount"]),
@@ -104,8 +115,10 @@ async def import_orders_csv(
     file: UploadFile = File(...),
     current_user: User = Depends(require_authority(EDIT_ORDERS)),
     storage: MinioStorage = Depends(get_storage),
-    zip_service: ZipCodeByCoordinatesService = Depends(get_zip_code_service),
-    tax_rate_service: TaxRateByZipService = Depends(get_tax_rate_service),
+    reporting_code_service: ReportingCodeByCoordinatesService = Depends(
+        get_reporting_code_service
+    ),
+    tax_rate_service: TaxRateByReportingCodeService = Depends(get_tax_rate_service),
 ) -> OrderImportTaskCreateResponse:
     filename = file.filename or "orders.csv"
     object_name = f"imports/{datetime.utcnow().strftime('%Y%m%d')}/{uuid4().hex}_{filename}"
@@ -130,7 +143,7 @@ async def import_orders_csv(
         _process_import_task,
         task.id,
         storage,
-        zip_service,
+        reporting_code_service,
         tax_rate_service,
     )
     return OrderImportTaskCreateResponse(task=_to_file_task_read(task))
@@ -140,7 +153,7 @@ async def import_orders_csv(
 async def list_orders(
     limit: int = Query(default=50, ge=1, le=500),
     offset: int = Query(default=0, ge=0),
-    zip_code: str | None = Query(default=None, min_length=1, max_length=5),
+    reporting_code: str | None = Query(default=None, min_length=1, max_length=32),
     timestamp_from: datetime | None = Query(default=None),
     timestamp_to: datetime | None = Query(default=None),
     subtotal_min: Decimal | None = Query(default=None, ge=Decimal("0.00")),
@@ -149,8 +162,8 @@ async def list_orders(
 ) -> OrdersListResponse:
     query = Order.all().prefetch_related("user")
 
-    if zip_code is not None:
-        query = query.filter(zip_code=_normalize_zip(zip_code))
+    if reporting_code is not None:
+        query = query.filter(reporting_code=_normalize_reporting_code(reporting_code))
 
     if timestamp_from is not None:
         query = query.filter(timestamp__gte=timestamp_from)
@@ -271,7 +284,7 @@ async def import_tasks_websocket(websocket: WebSocket) -> None:
             tasks = await FileTask.all().order_by("-id")
             payload = [_to_file_task_read(task).model_dump(mode="json") for task in tasks]
             await websocket.send_json({"tasks": payload})
-            await asyncio.sleep(3)
+            await asyncio.sleep(1)
     except WebSocketDisconnect:
         return
     except WebSocketException as exc:
@@ -280,8 +293,8 @@ async def import_tasks_websocket(websocket: WebSocket) -> None:
 
 async def resume_in_progress_import_tasks(
     storage: MinioStorage,
-    zip_service: ZipCodeByCoordinatesService,
-    tax_rate_service: TaxRateByZipService,
+    reporting_code_service: ReportingCodeByCoordinatesService,
+    tax_rate_service: TaxRateByReportingCodeService,
 ) -> set[asyncio.Task]:
     workers: set[asyncio.Task] = set()
     tasks = await FileTask.filter(status=FILE_TASK_STATUS_IN_PROGRESS).all()
@@ -290,7 +303,7 @@ async def resume_in_progress_import_tasks(
             _process_import_task(
                 task.id,
                 storage,
-                zip_service,
+                reporting_code_service,
                 tax_rate_service,
             )
         )
@@ -298,24 +311,21 @@ async def resume_in_progress_import_tasks(
     return workers
 
 
-def _normalize_zip(raw_zip: str) -> str:
-    normalized = raw_zip.strip()
+def _normalize_reporting_code(raw_reporting_code: str) -> str:
+    normalized = raw_reporting_code.strip()
     if not normalized:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="ZIP code cannot be empty",
+            detail="reporting_code cannot be empty",
         )
-    if not normalized.isdigit():
+    if len(normalized) > 32:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="ZIP code must contain only digits",
+            detail="reporting_code must have at most 32 characters",
         )
-    if len(normalized) > 5:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="ZIP code must have at most 5 digits",
-        )
-    return normalized.zfill(5)
+    if normalized.isdigit() and len(normalized) <= 4:
+        return normalized.zfill(4)
+    return normalized
 
 
 def _parse_date_param(name: str, value: str) -> date:
@@ -349,7 +359,8 @@ def _to_order_read(order: Order) -> OrderRead:
         longitude=order.longitude,
         subtotal=float(order.subtotal),
         timestamp=order.timestamp,
-        zip_code=order.zip_code,
+        reporting_code=order.reporting_code,
+        jurisdictions=order.jurisdictions or {},
         composite_tax_rate=float(order.composite_tax_rate),
         tax_amount=float(order.tax_amount),
         total_amount=float(order.total_amount),
@@ -381,19 +392,22 @@ def _compute_order_values(
     longitude: float,
     timestamp: datetime,
     subtotal_raw: Decimal,
-    zip_service: ZipCodeByCoordinatesService,
-    tax_rate_service: TaxRateByZipService,
-) -> dict[str, Decimal | float | datetime | str]:
-    zip_code = zip_service.get_zip_code(lat=latitude, lon=longitude)
-    if zip_code is None:
+    reporting_code_service: ReportingCodeByCoordinatesService,
+    tax_rate_service: TaxRateByReportingCodeService,
+) -> OrderComputedPayload:
+    reporting_code = reporting_code_service.get_reporting_code(lat=latitude, lon=longitude)
+    if reporting_code is None:
         raise ValueError("Delivery point is outside New York State coverage.")
 
-    rates = tax_rate_service.get_tax_rate_breakdown(zip_code, timestamp=timestamp)
+    rates = tax_rate_service.get_tax_rate_breakdown(reporting_code)
     if rates is None:
-        raise LookupError(f"Tax rate not found for ZIP code {zip_code}.")
+        raise LookupError(f"Tax rate not found for reporting code {reporting_code}.")
 
     subtotal = subtotal_raw.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
-    composite_tax_rate = Decimal(str(rates.estimated_combined_rate))
+    composite_tax_rate = Decimal(str(rates.composite_tax_rate)).quantize(
+        Decimal("0.00001"),
+        rounding=ROUND_HALF_UP,
+    )
     tax_amount = (subtotal * composite_tax_rate).quantize(
         Decimal("0.01"),
         rounding=ROUND_HALF_UP,
@@ -402,17 +416,30 @@ def _compute_order_values(
         Decimal("0.01"),
         rounding=ROUND_HALF_UP,
     )
-    state_rate = Decimal(str(rates.state_rate))
-    county_rate = Decimal(str(rates.estimated_county_rate))
-    city_rate = Decimal(str(rates.estimated_city_rate))
-    special_rates = Decimal(str(rates.estimated_special_rate))
+    state_rate = Decimal(str(rates.state_rate)).quantize(
+        Decimal("0.00001"),
+        rounding=ROUND_HALF_UP,
+    )
+    county_rate = Decimal(str(rates.county_rate)).quantize(
+        Decimal("0.00001"),
+        rounding=ROUND_HALF_UP,
+    )
+    city_rate = Decimal(str(rates.city_rate)).quantize(
+        Decimal("0.00001"),
+        rounding=ROUND_HALF_UP,
+    )
+    special_rates = Decimal(str(rates.special_rates)).quantize(
+        Decimal("0.00001"),
+        rounding=ROUND_HALF_UP,
+    )
 
     return {
         "latitude": latitude,
         "longitude": longitude,
         "subtotal": subtotal,
         "timestamp": timestamp,
-        "zip_code": zip_code,
+        "reporting_code": rates.reporting_code,
+        "jurisdictions": rates.jurisdictions,
         "composite_tax_rate": composite_tax_rate,
         "tax_amount": tax_amount,
         "total_amount": total_amount,
@@ -426,8 +453,8 @@ def _compute_order_values(
 async def _process_import_task(
     task_id: int,
     storage: MinioStorage,
-    zip_service: ZipCodeByCoordinatesService,
-    tax_rate_service: TaxRateByZipService,
+    reporting_code_service: ReportingCodeByCoordinatesService,
+    tax_rate_service: TaxRateByReportingCodeService,
 ) -> None:
     task = await FileTask.get_or_none(id=task_id)
     if not task:
@@ -457,14 +484,14 @@ async def _process_import_task(
             row_outcomes = await _compute_outcomes_parallel(
                 indexed_rows=indexed_rows,
                 columns=columns,
-                zip_service=zip_service,
+                reporting_code_service=reporting_code_service,
                 tax_rate_service=tax_rate_service,
             )
         else:
             row_outcomes = _compute_outcomes_sequential(
                 indexed_rows=indexed_rows,
                 columns=columns,
-                zip_service=zip_service,
+                reporting_code_service=reporting_code_service,
                 tax_rate_service=tax_rate_service,
             )
 
@@ -542,17 +569,17 @@ def _parse_import_row(
 def _compute_outcomes_sequential(
     indexed_rows: list[tuple[int, dict[str, str]]],
     columns: dict[str, str],
-    zip_service: ZipCodeByCoordinatesService,
-    tax_rate_service: TaxRateByZipService,
-) -> list[tuple[int, bool, dict[str, Decimal | float | datetime | str] | None]]:
-    outcomes: list[tuple[int, bool, dict[str, Decimal | float | datetime | str] | None]] = []
+    reporting_code_service: ReportingCodeByCoordinatesService,
+    tax_rate_service: TaxRateByReportingCodeService,
+) -> list[tuple[int, bool, OrderComputedPayload | None]]:
+    outcomes: list[tuple[int, bool, OrderComputedPayload | None]] = []
     for row_number, row in indexed_rows:
         outcomes.append(
             _compute_row_outcome(
                 row_number=row_number,
                 row=row,
                 columns=columns,
-                zip_service=zip_service,
+                reporting_code_service=reporting_code_service,
                 tax_rate_service=tax_rate_service,
             )
         )
@@ -562,16 +589,16 @@ def _compute_outcomes_sequential(
 async def _compute_outcomes_parallel(
     indexed_rows: list[tuple[int, dict[str, str]]],
     columns: dict[str, str],
-    zip_service: ZipCodeByCoordinatesService,
-    tax_rate_service: TaxRateByZipService,
-) -> list[tuple[int, bool, dict[str, Decimal | float | datetime | str] | None]]:
+    reporting_code_service: ReportingCodeByCoordinatesService,
+    tax_rate_service: TaxRateByReportingCodeService,
+) -> list[tuple[int, bool, OrderComputedPayload | None]]:
     chunks = _split_rows_into_chunks(indexed_rows=indexed_rows, chunks_count=PARALLEL_IMPORT_CHUNKS)
     chunk_futures = [
         asyncio.to_thread(
             _compute_outcomes_sequential,
             chunk,
             columns,
-            zip_service,
+            reporting_code_service,
             tax_rate_service,
         )
         for chunk in chunks
@@ -598,9 +625,9 @@ def _compute_row_outcome(
     row_number: int,
     row: dict[str, str],
     columns: dict[str, str],
-    zip_service: ZipCodeByCoordinatesService,
-    tax_rate_service: TaxRateByZipService,
-) -> tuple[int, bool, dict[str, Decimal | float | datetime | str] | None]:
+    reporting_code_service: ReportingCodeByCoordinatesService,
+    tax_rate_service: TaxRateByReportingCodeService,
+) -> tuple[int, bool, OrderComputedPayload | None]:
     try:
         latitude, longitude, timestamp, subtotal = _parse_import_row(row=row, columns=columns)
         computed = _compute_order_values(
@@ -608,7 +635,7 @@ def _compute_row_outcome(
             longitude=longitude,
             timestamp=timestamp,
             subtotal_raw=subtotal,
-            zip_service=zip_service,
+            reporting_code_service=reporting_code_service,
             tax_rate_service=tax_rate_service,
         )
         return (row_number, True, computed)

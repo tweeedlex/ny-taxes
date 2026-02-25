@@ -24,6 +24,8 @@ class OrderTaxCalculationResponse(BaseModel):
     order_id: int
     author_user_id: int | None
     author_login: str | None
+    reporting_code: str
+    jurisdictions: dict[str, dict[str, float]]
     composite_tax_rate: float
     tax_amount: float
     total_amount: float
@@ -40,7 +42,8 @@ class OrderRead(BaseModel):
     longitude: float
     subtotal: float
     timestamp: datetime
-    zip_code: str
+    reporting_code: str
+    jurisdictions: dict[str, dict[str, float]]
     composite_tax_rate: float
     tax_amount: float
     total_amount: float

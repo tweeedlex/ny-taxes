@@ -16,7 +16,7 @@
   - `POST /auth/login`
   - `POST /auth/logout`
   - `GET /auth/me`
-  - `POST /orders` (розрахунок податку за координатами/ZIP)
+  - `POST /orders` (розрахунок податку за координатами)
   - `POST /orders/import` (CSV імпорт у фоні)
   - `GET /orders` (список, pagination, filters)
   - `GET /orders/stats` (агрегація за період з розбивкою по днях)
@@ -30,11 +30,15 @@
 ```text
 src/
   static/
-    .gitkeep
-    ny_postcodes.shp
-    ny_tax_rates/
-      2025-09.csv
-      ...
+    index.html
+    ny_tax_rates.json
+    shapefiles/
+      Cities.shp
+      Cities.dbf
+      Cities.shx
+      Counties.shp
+      Counties.dbf
+      Counties.shx
   api/
     routes/
       auth.py
@@ -58,7 +62,7 @@ src/
     order.py
     user.py
   services/
-    zip_code_service.py
+    reporting_code_service.py
     tax_rate_service.py
   main.py
 ```
@@ -97,10 +101,11 @@ docker compose up --build
 - `POST /users`, `PATCH /users/{id}`, `DELETE /users/{id}` потребують `edit_users`.
 - `POST /orders` потребує `edit_orders` і створює запис у таблиці `orders`.
   - У відповіді повертає `order_id`, `author_user_id`, `author_login`.
-  - Для розрахунку ставок використовується `timestamp`:
-    - береться CSV за відповідний місяць `YYYY-MM` з `static/ny_tax_rates`;
-    - якщо `timestamp` раніше мінімального доступного місяця -> `422`;
-    - якщо `timestamp` пізніше максимального доступного місяця -> використовується максимальний доступний місяць.
+  - Для розрахунку ставок використовується `REP_CODE`:
+    - спочатку пошук по `src/static/shapefiles/Cities.shp` (пріоритет міста);
+    - якщо в місті коду немає або місто не знайдено, пошук по `Counties.shp`;
+    - якщо точка поза межами NY -> `422`;
+    - по знайденому `REP_CODE` ставка береться з `src/static/ny_tax_rates.json`.
 - `POST /orders/import` потребує `edit_orders`:
   - приймає CSV (multipart/form-data);
   - завантажує файл у MinIO;
@@ -111,7 +116,7 @@ docker compose up --build
   - якщо сервер рестартиться, `in_progress` задачі автоматично продовжуються зі зміщенням `successful_rows + failed_rows + 1`.
 - `GET /orders` потребує `read_orders`.
   - Pagination: `limit`, `offset`
-  - Filters: `zip_code`, `timestamp_from`, `timestamp_to`, `subtotal_min`, `subtotal_max`
+  - Filters: `reporting_code`, `timestamp_from`, `timestamp_to`, `subtotal_min`, `subtotal_max`
   - Для кожного елемента повертається автор: `author_user_id`, `author_login`.
 - `GET /orders/stats` потребує `read_orders`.
   - Query params: `from_date`, `to_date` у форматі `YYYY.MM.DD` (по полю `timestamp`)

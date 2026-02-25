@@ -194,7 +194,7 @@
         <div class="row">
           <label>Limit <input name="limit" type="number" value="20" /></label>
           <label>Offset <input name="offset" type="number" value="0" /></label>
-          <label>ZIP <input name="zip_code" /></label>
+          <label>Reporting code <input name="reporting_code" /></label>
           <label>Timestamp from <input name="timestamp_from" placeholder="2025-11-01T00:00:00Z" /></label>
           <label>Timestamp to <input name="timestamp_to" placeholder="2025-11-30T23:59:59Z" /></label>
           <label>Subtotal min <input name="subtotal_min" /></label>
@@ -405,7 +405,7 @@
     const form = e.currentTarget;
     const q = new URLSearchParams();
     const names = [
-      "limit", "offset", "zip_code", "timestamp_from", "timestamp_to", "subtotal_min", "subtotal_max",
+      "limit", "offset", "reporting_code", "timestamp_from", "timestamp_to", "subtotal_min", "subtotal_max",
     ];
     for (const n of names) {
       const v = getFormValue(form, n);

@@ -13,7 +13,7 @@ from src.core.config import settings
 from src.core.database import close_db, init_db
 from src.core.sessions import SessionManager
 from src.core.storage import MinioStorage
-from src.services import TaxRateByZipService, ZipCodeByCoordinatesService
+from src.services import TaxRateByReportingCodeService, ReportingCodeByCoordinatesService
 
 
 @asynccontextmanager
@@ -33,13 +33,13 @@ async def lifespan(app: FastAPI):
     )
     app.state.storage = MinioStorage()
     app.state.storage.ensure_bucket()
-    app.state.zip_code_service = ZipCodeByCoordinatesService()
-    app.state.tax_rate_service = TaxRateByZipService()
+    app.state.reporting_code_service = ReportingCodeByCoordinatesService()
+    app.state.tax_rate_service = TaxRateByReportingCodeService()
 
     await ensure_bootstrap_admin()
     app.state.import_workers = await resume_in_progress_import_tasks(
         storage=app.state.storage,
-        zip_service=app.state.zip_code_service,
+        reporting_code_service=app.state.reporting_code_service,
         tax_rate_service=app.state.tax_rate_service,
     )
 

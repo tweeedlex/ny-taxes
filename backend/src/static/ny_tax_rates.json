@@ -1,0 +1,472 @@
+{
+  "0181": {
+    "state_rate": { "New York State": 0.04 },
+    "county_rate": { "Albany": 0.04 },
+    "city_rate": {},
+    "special_rates": {}
+  },
+  "0221": {
+    "state_rate": { "New York State": 0.04 },
+    "county_rate": { "Allegany": 0.045 },
+    "city_rate": {},
+    "special_rates": {}
+  },
+  "0321": {
+    "state_rate": { "New York State": 0.04 },
+    "county_rate": { "Broome": 0.04 },
+    "city_rate": {},
+    "special_rates": {}
+  },
+  "0481": {
+    "state_rate": { "New York State": 0.04 },
+    "county_rate": { "Cattaraugus": 0.04 },
+    "city_rate": {},
+    "special_rates": {}
+  },
+  "0441": {
+    "state_rate": { "New York State": 0.04 },
+    "county_rate": {},
+    "city_rate": { "Olean": 0.04 },
+    "special_rates": {}
+  },
+  "0431": {
+    "state_rate": { "New York State": 0.04 },
+    "county_rate": {},
+    "city_rate": { "Salamanca": 0.04 },
+    "special_rates": {}
+  },
+  "0511": {
+    "state_rate": { "New York State": 0.04 },
+    "county_rate": { "Cayuga": 0.04 },
+    "city_rate": {},
+    "special_rates": {}
+  },
+  "0561": {
+    "state_rate": { "New York State": 0.04 },
+    "county_rate": {},
+    "city_rate": { "Auburn": 0.04 },
+    "special_rates": {}
+  },
+  "0651": {
+    "state_rate": { "New York State": 0.04 },
+    "county_rate": { "Chautauqua": 0.04 },
+    "city_rate": {},
+    "special_rates": {}
+  },
+  "0711": {
+    "state_rate": { "New York State": 0.04 },
+    "county_rate": { "Chemung": 0.04 },
+    "city_rate": {},
+    "special_rates": {}
+  },
+  "0861": {
+    "state_rate": { "New York State": 0.04 },
+    "county_rate": { "Chenango": 0.04 },
+    "city_rate": {},
+    "special_rates": {}
+  },
+  "0831": {
+    "state_rate": { "New York State": 0.04 },
+    "county_rate": {},
+    "city_rate": { "Norwich": 0.04 },
+    "special_rates": {}
+  },
+  "0921": {
+    "state_rate": { "New York State": 0.04 },
+    "county_rate": { "Clinton": 0.04 },
+    "city_rate": {},
+    "special_rates": {}
+  },
+  "1021": {
+    "state_rate": { "New York State": 0.04 },
+    "county_rate": { "Columbia": 0.04 },
+    "city_rate": {},
+    "special_rates": {}
+  },
+  "1131": {
+    "state_rate": { "New York State": 0.04 },
+    "county_rate": { "Cortland": 0.04 },
+    "city_rate": {},
+    "special_rates": {}
+  },
+  "1221": {
+    "state_rate": { "New York State": 0.04 },
+    "county_rate": { "Delaware": 0.04 },
+    "city_rate": {},
+    "special_rates": {}
+  },
+
+  "1311": {
+    "state_rate": { "New York State": 0.04 },
+    "county_rate": { "Dutchess": 0.0375 },
+    "city_rate": {},
+    "special_rates": { "MCTD": 0.00375 }
+  },
+
+  "1451": {
+    "state_rate": { "New York State": 0.04 },
+    "county_rate": { "Erie": 0.0475 },
+    "city_rate": {},
+    "special_rates": {}
+  },
+  "1521": {
+    "state_rate": { "New York State": 0.04 },
+    "county_rate": { "Essex": 0.04 },
+    "city_rate": {},
+    "special_rates": {}
+  },
+  "1621": {
+    "state_rate": { "New York State": 0.04 },
+    "county_rate": { "Franklin": 0.04 },
+    "city_rate": {},
+    "special_rates": {}
+  },
+  "1791": {
+    "state_rate": { "New York State": 0.04 },
+    "county_rate": { "Fulton": 0.04 },
+    "city_rate": {},
+    "special_rates": {}
+  },
+  "1741": {
+    "state_rate": { "New York State": 0.04 },
+    "county_rate": {},
+    "city_rate": { "Gloversville": 0.04 },
+    "special_rates": {}
+  },
+  "1751": {
+    "state_rate": { "New York State": 0.04 },
+    "county_rate": {},
+    "city_rate": { "Johnstown": 0.04 },
+    "special_rates": {}
+  },
+  "1811": {
+    "state_rate": { "New York State": 0.04 },
+    "county_rate": { "Genesee": 0.04 },
+    "city_rate": {},
+    "special_rates": {}
+  },
+  "1911": {
+    "state_rate": { "New York State": 0.04 },
+    "county_rate": { "Greene": 0.04 },
+    "city_rate": {},
+    "special_rates": {}
+  },
+  "2011": {
+    "state_rate": { "New York State": 0.04 },
+    "county_rate": { "Hamilton": 0.04 },
+    "city_rate": {},
+    "special_rates": {}
+  },
+  "2121": {
+    "state_rate": { "New York State": 0.04 },
+    "county_rate": { "Herkimer": 0.0425 },
+    "city_rate": {},
+    "special_rates": {}
+  },
+  "2221": {
+    "state_rate": { "New York State": 0.04 },
+    "county_rate": { "Jefferson": 0.04 },
+    "city_rate": {},
+    "special_rates": {}
+  },
+  "2321": {
+    "state_rate": { "New York State": 0.04 },
+    "county_rate": { "Lewis": 0.04 },
+    "city_rate": {},
+    "special_rates": {}
+  },
+  "2411": {
+    "state_rate": { "New York State": 0.04 },
+    "county_rate": { "Livingston": 0.04 },
+    "city_rate": {},
+    "special_rates": {}
+  },
+  "2511": {
+    "state_rate": { "New York State": 0.04 },
+    "county_rate": { "Madison": 0.04 },
+    "city_rate": {},
+    "special_rates": {}
+  },
+  "2541": {
+    "state_rate": { "New York State": 0.04 },
+    "county_rate": {},
+    "city_rate": { "Oneida": 0.04 },
+    "special_rates": {}
+  },
+  "2611": {
+    "state_rate": { "New York State": 0.04 },
+    "county_rate": { "Monroe": 0.04 },
+    "city_rate": {},
+    "special_rates": {}
+  },
+  "2781": {
+    "state_rate": { "New York State": 0.04 },
+    "county_rate": { "Montgomery": 0.04 },
+    "city_rate": {},
+    "special_rates": {}
+  },
+
+  "2811": {
+    "state_rate": { "New York State": 0.04 },
+    "county_rate": { "Nassau": 0.0425 },
+    "city_rate": {},
+    "special_rates": { "MCTD": 0.00375 }
+  },
+
+  "8081": {
+    "state_rate": { "New York State": 0.04 },
+    "county_rate": {},
+    "city_rate": { "New York City": 0.045 },
+    "special_rates": { "MCTD": 0.00375 }
+  },
+
+  "2911": {
+    "state_rate": { "New York State": 0.04 },
+    "county_rate": { "Niagara": 0.04 },
+    "city_rate": {},
+    "special_rates": {}
+  },
+  "3010": {
+    "state_rate": { "New York State": 0.04 },
+    "county_rate": { "Oneida": 0.0475 },
+    "city_rate": {},
+    "special_rates": {}
+  },
+  "3015": {
+    "state_rate": { "New York State": 0.04 },
+    "county_rate": {},
+    "city_rate": { "Rome": 0.0475 },
+    "special_rates": {}
+  },
+  "3018": {
+    "state_rate": { "New York State": 0.04 },
+    "county_rate": {},
+    "city_rate": { "Utica": 0.0475 },
+    "special_rates": {}
+  },
+  "3121": {
+    "state_rate": { "New York State": 0.04 },
+    "county_rate": { "Onondaga": 0.04 },
+    "city_rate": {},
+    "special_rates": {}
+  },
+  "3211": {
+    "state_rate": { "New York State": 0.04 },
+    "county_rate": { "Ontario": 0.035 },
+    "city_rate": {},
+    "special_rates": {}
+  },
+
+  "3321": {
+    "state_rate": { "New York State": 0.04 },
+    "county_rate": { "Orange": 0.0375 },
+    "city_rate": {},
+    "special_rates": { "MCTD": 0.00375 }
+  },
+
+  "3481": {
+    "state_rate": { "New York State": 0.04 },
+    "county_rate": { "Orleans": 0.04 },
+    "city_rate": {},
+    "special_rates": {}
+  },
+  "3501": {
+    "state_rate": { "New York State": 0.04 },
+    "county_rate": { "Oswego": 0.04 },
+    "city_rate": {},
+    "special_rates": {}
+  },
+  "3561": {
+    "state_rate": { "New York State": 0.04 },
+    "county_rate": {},
+    "city_rate": { "Oswego": 0.04 },
+    "special_rates": {}
+  },
+  "3621": {
+    "state_rate": { "New York State": 0.04 },
+    "county_rate": { "Otsego": 0.04 },
+    "city_rate": {},
+    "special_rates": {}
+  },
+
+  "3731": {
+    "state_rate": { "New York State": 0.04 },
+    "county_rate": { "Putnam": 0.04 },
+    "city_rate": {},
+    "special_rates": { "MCTD": 0.00375 }
+  },
+
+  "3881": {
+    "state_rate": { "New York State": 0.04 },
+    "county_rate": { "Rensselaer": 0.04 },
+    "city_rate": {},
+    "special_rates": {}
+  },
+
+  "3921": {
+    "state_rate": { "New York State": 0.04 },
+    "county_rate": { "Rockland": 0.04 },
+    "city_rate": {},
+    "special_rates": { "MCTD": 0.00375 }
+  },
+
+  "4091": {
+    "state_rate": { "New York State": 0.04 },
+    "county_rate": { "St. Lawrence": 0.04 },
+    "city_rate": {},
+    "special_rates": {}
+  },
+  "4012": {
+    "state_rate": { "New York State": 0.04 },
+    "county_rate": {},
+    "city_rate": { "Ogdensburg": 0.04 },
+    "special_rates": {}
+  },
+  "4111": {
+    "state_rate": { "New York State": 0.04 },
+    "county_rate": { "Saratoga": 0.03 },
+    "city_rate": {},
+    "special_rates": {}
+  },
+  "4131": {
+    "state_rate": { "New York State": 0.04 },
+    "county_rate": {},
+    "city_rate": { "Saratoga Springs": 0.03 },
+    "special_rates": {}
+  },
+  "4241": {
+    "state_rate": { "New York State": 0.04 },
+    "county_rate": { "Schenectady": 0.04 },
+    "city_rate": {},
+    "special_rates": {}
+  },
+  "4321": {
+    "state_rate": { "New York State": 0.04 },
+    "county_rate": { "Schoharie": 0.04 },
+    "city_rate": {},
+    "special_rates": {}
+  },
+  "4411": {
+    "state_rate": { "New York State": 0.04 },
+    "county_rate": { "Schuyler": 0.04 },
+    "city_rate": {},
+    "special_rates": {}
+  },
+  "4511": {
+    "state_rate": { "New York State": 0.04 },
+    "county_rate": { "Seneca": 0.04 },
+    "city_rate": {},
+    "special_rates": {}
+  },
+  "4691": {
+    "state_rate": { "New York State": 0.04 },
+    "county_rate": { "Steuben": 0.04 },
+    "city_rate": {},
+    "special_rates": {}
+  },
+  "4711": {
+    "state_rate": { "New York State": 0.04 },
+    "county_rate": { "Suffolk": 0.0475 },
+    "city_rate": {},
+    "special_rates": {}
+  },
+  "4821": {
+    "state_rate": { "New York State": 0.04 },
+    "county_rate": { "Sullivan": 0.04 },
+    "city_rate": {},
+    "special_rates": {}
+  },
+  "4921": {
+    "state_rate": { "New York State": 0.04 },
+    "county_rate": { "Tioga": 0.04 },
+    "city_rate": {},
+    "special_rates": {}
+  },
+  "5081": {
+    "state_rate": { "New York State": 0.04 },
+    "county_rate": { "Tompkins": 0.04 },
+    "city_rate": {},
+    "special_rates": {}
+  },
+  "5021": {
+    "state_rate": { "New York State": 0.04 },
+    "county_rate": {},
+    "city_rate": { "Ithaca": 0.04 },
+    "special_rates": {}
+  },
+  "5111": {
+    "state_rate": { "New York State": 0.04 },
+    "county_rate": { "Ulster": 0.04 },
+    "city_rate": {},
+    "special_rates": {}
+  },
+  "5281": {
+    "state_rate": { "New York State": 0.04 },
+    "county_rate": { "Warren": 0.03 },
+    "city_rate": {},
+    "special_rates": {}
+  },
+  "5211": {
+    "state_rate": { "New York State": 0.04 },
+    "county_rate": {},
+    "city_rate": { "Glens Falls": 0.03 },
+    "special_rates": {}
+  },
+  "5311": {
+    "state_rate": { "New York State": 0.04 },
+    "county_rate": { "Washington": 0.03 },
+    "city_rate": {},
+    "special_rates": {}
+  },
+  "5421": {
+    "state_rate": { "New York State": 0.04 },
+    "county_rate": { "Wayne": 0.04 },
+    "city_rate": {},
+    "special_rates": {}
+  },
+
+  "5581": {
+    "state_rate": { "New York State": 0.04 },
+    "county_rate": { "Westchester": 0.04 },
+    "city_rate": {},
+    "special_rates": { "MCTD": 0.00375 }
+  },
+
+  "5521": {
+    "state_rate": { "New York State": 0.04 },
+    "county_rate": {},
+    "city_rate": { "Mount Vernon": 0.04 },
+    "special_rates": { "MCTD": 0.00375 }
+  },
+  "6861": {
+    "state_rate": { "New York State": 0.04 },
+    "county_rate": {},
+    "city_rate": { "New Rochelle": 0.04 },
+    "special_rates": { "MCTD": 0.00375 }
+  },
+  "6513": {
+    "state_rate": { "New York State": 0.04 },
+    "county_rate": {},
+    "city_rate": { "White Plains": 0.04 },
+    "special_rates": { "MCTD": 0.00375 }
+  },
+  "6511": {
+    "state_rate": { "New York State": 0.04 },
+    "county_rate": {},
+    "city_rate": { "Yonkers": 0.045 },
+    "special_rates": { "MCTD": 0.00375 }
+  },
+
+  "5621": {
+    "state_rate": { "New York State": 0.04 },
+    "county_rate": { "Wyoming": 0.04 },
+    "city_rate": {},
+    "special_rates": {}
+  },
+  "5721": {
+    "state_rate": { "New York State": 0.04 },
+    "county_rate": { "Yates": 0.04 },
+    "city_rate": {},
+    "special_rates": {}
+  }
+}
