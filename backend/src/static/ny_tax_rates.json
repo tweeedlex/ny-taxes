@@ -1,4 +1,15 @@
 {
+  "0021": {
+    "state_rate": [
+      {
+        "rate": 0.04,
+        "name": "New York State"
+      }
+    ],
+    "county_rate": [],
+    "city_rate": [],
+    "special_rates": []
+  },
   "0181": {
     "state_rate": [
       {

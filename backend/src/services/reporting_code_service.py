@@ -18,6 +18,7 @@ class ReportingCodeByCoordinatesService:
         self,
         cities_shp_path: Path | None = None,
         counties_shp_path: Path | None = None,
+        ocean_shp_path: Path | None = None,
         source_crs: str = "EPSG:4326",
         target_crs: str = "EPSG:26918",
     ) -> None:
@@ -25,12 +26,15 @@ class ReportingCodeByCoordinatesService:
         static_dir = base_dir / "static" / "shapefiles"
         self._cities_shp_path = cities_shp_path or (static_dir / "Cities.shp")
         self._counties_shp_path = counties_shp_path or (static_dir / "Counties.shp")
+        self._ocean_shp_path = ocean_shp_path or (static_dir / "Ocean.shp")
         if not self._cities_shp_path.exists():
             raise FileNotFoundError(f"Cities shapefile not found: {self._cities_shp_path}")
         if not self._counties_shp_path.exists():
             raise FileNotFoundError(
                 f"Counties shapefile not found: {self._counties_shp_path}"
             )
+        if not self._ocean_shp_path.exists():
+            raise FileNotFoundError(f"Ocean shapefile not found: {self._ocean_shp_path}")
 
         self._transformer = Transformer.from_crs(
             crs_from=source_crs,
@@ -39,6 +43,7 @@ class ReportingCodeByCoordinatesService:
         )
         self._city_polygons = self._load_polygons(self._cities_shp_path)
         self._county_polygons = self._load_polygons(self._counties_shp_path)
+        self._ocean_polygons = self._load_polygons(self._ocean_shp_path)
 
     def get_reporting_code(self, lat: float, lon: float) -> str | None:
         self._validate_coordinates(lat=lat, lon=lon)
@@ -52,8 +57,16 @@ class ReportingCodeByCoordinatesService:
         if city_code is not None:
             return city_code
 
-        return self._find_reporting_code(
+        county_code = self._find_reporting_code(
             polygons=self._county_polygons,
+            lat=projected_lat,
+            lon=projected_lon,
+        )
+        if county_code is not None:
+            return county_code
+
+        return self._find_reporting_code(
+            polygons=self._ocean_polygons,
             lat=projected_lat,
             lon=projected_lon,
         )

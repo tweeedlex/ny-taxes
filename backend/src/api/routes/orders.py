@@ -1,6 +1,7 @@
 import asyncio
 import csv
 import io
+import logging
 from datetime import date, datetime, time, timedelta
 from decimal import Decimal, ROUND_HALF_UP
 from urllib.parse import unquote, urlsplit
@@ -46,6 +47,7 @@ from src.api.deps import (
 )
 
 router = APIRouter(prefix="/orders", tags=["orders"])
+logger = logging.getLogger(__name__)
 FILE_TASK_STATUS_IN_PROGRESS = "in_progress"
 FILE_TASK_STATUS_COMPLETED = "completed"
 PARALLEL_IMPORT_THRESHOLD = 100
@@ -552,7 +554,7 @@ async def _process_import_task(
                 pending_failed_rows=pending_failed_rows,
             )
     except Exception:
-        pass
+        logger.exception("Import task %s failed with unexpected error", task_id)
     finally:
         if pending_orders or pending_failed_rows:
             inserted_count, flushed_failed = await _flush_pending_import_batch(
@@ -719,6 +721,15 @@ def _compute_row_outcome(
 ) -> tuple[int, bool, OrderComputedPayload | None]:
     try:
         latitude, longitude, timestamp, subtotal = _parse_import_row(row=row, columns=columns)
+    except Exception as exc:
+        logger.warning(
+            "Import row %s parse error: %s",
+            row_number,
+            exc,
+        )
+        return (row_number, False, None)
+
+    try:
         computed = _compute_order_values(
             latitude=latitude,
             longitude=longitude,
@@ -728,7 +739,39 @@ def _compute_row_outcome(
             tax_rate_service=tax_rate_service,
         )
         return (row_number, True, computed)
+    except ValueError as exc:
+        if "outside New York State coverage" in str(exc):
+            logger.warning(
+                "Import row %s is outside NY coverage: latitude=%s longitude=%s",
+                row_number,
+                latitude,
+                longitude,
+            )
+        else:
+            logger.warning(
+                "Import row %s validation error: %s (latitude=%s longitude=%s)",
+                row_number,
+                exc,
+                latitude,
+                longitude,
+            )
+        return (row_number, False, None)
+    except LookupError as exc:
+        logger.warning(
+            "Import row %s tax lookup error: %s (latitude=%s longitude=%s)",
+            row_number,
+            exc,
+            latitude,
+            longitude,
+        )
+        return (row_number, False, None)
     except Exception:
+        logger.exception(
+            "Import row %s unexpected processing error (latitude=%s longitude=%s)",
+            row_number,
+            latitude,
+            longitude,
+        )
         return (row_number, False, None)
 
 
