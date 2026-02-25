@@ -51,6 +51,7 @@ FILE_TASK_STATUS_COMPLETED = "completed"
 PARALLEL_IMPORT_THRESHOLD = 100
 PARALLEL_IMPORT_CHUNKS = 5
 IMPORT_BULK_INSERT_BATCH_SIZE = 500
+IMPORT_COMPUTE_BATCH_SIZE = 1000
 OrderComputedPayload = dict[
     str, Decimal | float | datetime | str | dict[str, list[dict[str, str | float]]]
 ]
@@ -147,6 +148,7 @@ async def import_orders_csv(
         storage,
         reporting_code_service,
         tax_rate_service,
+        content,
     )
     return OrderImportTaskCreateResponse(task=_to_file_task_read(task))
 
@@ -473,6 +475,7 @@ async def _process_import_task(
     storage: MinioStorage,
     reporting_code_service: ReportingCodeByCoordinatesService,
     tax_rate_service: TaxRateByReportingCodeService,
+    source_content: bytes | None = None,
 ) -> None:
     task = await FileTask.get_or_none(id=task_id)
     if not task:
@@ -486,57 +489,68 @@ async def _process_import_task(
     object_name = _extract_object_name(file_path=task.file_path, bucket=storage.bucket)
 
     try:
-        content_bytes = await asyncio.to_thread(storage.get_object_bytes, object_name)
+        if source_content is None:
+            content_bytes = await asyncio.to_thread(storage.get_object_bytes, object_name)
+        else:
+            content_bytes = source_content
+
         text = content_bytes.decode("utf-8-sig")
         reader = csv.DictReader(io.StringIO(text))
         columns = _resolve_import_columns(reader.fieldnames)
-        rows = list(reader)
 
-        indexed_rows = [
-            (row_number, row)
-            for row_number, row in enumerate(rows, start=1)
-            if row_number > processed_rows
-        ]
+        total_remaining_rows = max(task.total_rows - processed_rows, 0)
+        use_parallel = total_remaining_rows > PARALLEL_IMPORT_THRESHOLD
+        indexed_rows_batch: list[tuple[int, dict[str, str]]] = []
 
-        if len(indexed_rows) > PARALLEL_IMPORT_THRESHOLD:
-            row_outcomes = await _compute_outcomes_parallel(
-                indexed_rows=indexed_rows,
+        for row_number, row in enumerate(reader, start=1):
+            if row_number <= processed_rows:
+                continue
+
+            indexed_rows_batch.append((row_number, row))
+            if len(indexed_rows_batch) < IMPORT_COMPUTE_BATCH_SIZE:
+                continue
+
+            (
+                successful_rows,
+                failed_rows,
+                processed_rows,
+                pending_orders,
+                pending_failed_rows,
+            ) = await _process_indexed_rows_batch(
+                task_id=task_id,
+                task_user_id=task.user_id,
+                indexed_rows=indexed_rows_batch,
                 columns=columns,
+                use_parallel=use_parallel,
                 reporting_code_service=reporting_code_service,
                 tax_rate_service=tax_rate_service,
+                successful_rows=successful_rows,
+                failed_rows=failed_rows,
+                pending_orders=pending_orders,
+                pending_failed_rows=pending_failed_rows,
             )
-        else:
-            row_outcomes = _compute_outcomes_sequential(
-                indexed_rows=indexed_rows,
+            indexed_rows_batch = []
+
+        if indexed_rows_batch:
+            (
+                successful_rows,
+                failed_rows,
+                processed_rows,
+                pending_orders,
+                pending_failed_rows,
+            ) = await _process_indexed_rows_batch(
+                task_id=task_id,
+                task_user_id=task.user_id,
+                indexed_rows=indexed_rows_batch,
                 columns=columns,
+                use_parallel=use_parallel,
                 reporting_code_service=reporting_code_service,
                 tax_rate_service=tax_rate_service,
+                successful_rows=successful_rows,
+                failed_rows=failed_rows,
+                pending_orders=pending_orders,
+                pending_failed_rows=pending_failed_rows,
             )
-
-        for row_number, success, computed in row_outcomes:
-            processed_rows = row_number
-            if success and computed is not None:
-                pending_orders.append(Order(user_id=task.user_id, **computed))
-            else:
-                pending_failed_rows += 1
-
-            if len(pending_orders) >= IMPORT_BULK_INSERT_BATCH_SIZE:
-                inserted_count, flushed_failed = await _flush_pending_import_batch(
-                    pending_orders=pending_orders,
-                    pending_failed_rows=pending_failed_rows,
-                )
-                successful_rows += inserted_count
-                failed_rows += flushed_failed
-                pending_orders = []
-                pending_failed_rows = 0
-
-            if processed_rows % 30 == 0:
-                await _update_file_task_progress(
-                    task_id=task_id,
-                    successful_rows=successful_rows,
-                    failed_rows=failed_rows,
-                    status=FILE_TASK_STATUS_IN_PROGRESS,
-                )
     except Exception:
         pass
     finally:
@@ -553,6 +567,63 @@ async def _process_import_task(
             failed_rows=failed_rows,
             status=FILE_TASK_STATUS_COMPLETED,
         )
+
+
+async def _process_indexed_rows_batch(
+    task_id: int,
+    task_user_id: int,
+    indexed_rows: list[tuple[int, dict[str, str]]],
+    columns: dict[str, str],
+    use_parallel: bool,
+    reporting_code_service: ReportingCodeByCoordinatesService,
+    tax_rate_service: TaxRateByReportingCodeService,
+    successful_rows: int,
+    failed_rows: int,
+    pending_orders: list[Order],
+    pending_failed_rows: int,
+) -> tuple[int, int, int, list[Order], int]:
+    processed_rows = 0
+    if use_parallel and len(indexed_rows) > PARALLEL_IMPORT_THRESHOLD:
+        row_outcomes = await _compute_outcomes_parallel(
+            indexed_rows=indexed_rows,
+            columns=columns,
+            reporting_code_service=reporting_code_service,
+            tax_rate_service=tax_rate_service,
+        )
+    else:
+        row_outcomes = _compute_outcomes_sequential(
+            indexed_rows=indexed_rows,
+            columns=columns,
+            reporting_code_service=reporting_code_service,
+            tax_rate_service=tax_rate_service,
+        )
+
+    for row_number, success, computed in row_outcomes:
+        processed_rows = row_number
+        if success and computed is not None:
+            pending_orders.append(Order(user_id=task_user_id, **computed))
+        else:
+            pending_failed_rows += 1
+
+        if len(pending_orders) >= IMPORT_BULK_INSERT_BATCH_SIZE:
+            inserted_count, flushed_failed = await _flush_pending_import_batch(
+                pending_orders=pending_orders,
+                pending_failed_rows=pending_failed_rows,
+            )
+            successful_rows += inserted_count
+            failed_rows += flushed_failed
+            pending_orders = []
+            pending_failed_rows = 0
+
+        if processed_rows % 30 == 0:
+            await _update_file_task_progress(
+                task_id=task_id,
+                successful_rows=successful_rows,
+                failed_rows=failed_rows,
+                status=FILE_TASK_STATUS_IN_PROGRESS,
+            )
+
+    return successful_rows, failed_rows, processed_rows, pending_orders, pending_failed_rows
 
 
 def _resolve_import_columns(fieldnames: list[str] | None) -> dict[str, str]:
