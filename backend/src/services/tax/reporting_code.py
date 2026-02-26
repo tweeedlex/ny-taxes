@@ -21,7 +21,7 @@ class ReportingCodeByCoordinatesService:
         source_crs: str = "EPSG:4326",
         target_crs: str = "EPSG:26918",
     ) -> None:
-        base_dir = Path(__file__).resolve().parent.parent
+        base_dir = Path(__file__).resolve().parents[2]
         static_dir = base_dir / "static" / "shapefiles"
         self._cities_shp_path = cities_shp_path or (static_dir / "Cities.shp")
         self._counties_shp_path = counties_shp_path or (static_dir / "Counties.shp")

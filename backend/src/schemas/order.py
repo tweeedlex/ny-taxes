@@ -1,7 +1,9 @@
 from datetime import datetime
 from decimal import Decimal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+from src.core.date_rules import ensure_min_supported_datetime
 
 
 class OrderCreateRequest(BaseModel):
@@ -9,6 +11,12 @@ class OrderCreateRequest(BaseModel):
     longitude: float = Field(ge=-180.0, le=180.0)
     subtotal: Decimal = Field(ge=Decimal("0.00"))
     timestamp: datetime
+
+    @field_validator("timestamp")
+    @classmethod
+    def validate_timestamp(cls, value: datetime) -> datetime:
+        ensure_min_supported_datetime(value, "timestamp")
+        return value
 
 
 class TaxBreakdownResponse(BaseModel):

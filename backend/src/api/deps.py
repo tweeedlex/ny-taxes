@@ -6,7 +6,7 @@ from src.core.config import settings
 from src.core.sessions import SessionManager
 from src.core.storage import MinioStorage
 from src.models.user import User
-from src.services import TaxRateByReportingCodeService, ReportingCodeByCoordinatesService
+from src.services.tax import TaxRateByReportingCodeService, ReportingCodeByCoordinatesService
 
 
 def get_session_manager(request: Request) -> SessionManager:
@@ -55,7 +55,7 @@ async def get_current_user(
 
 def require_authority(authority: str) -> Callable:
     async def checker(current_user: User = Depends(get_current_user)) -> User:
-        if authority not in (current_user.authorities or []):
+        if not _has_authority(current_user, authority):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail=f"Missing authority: {authority}",
@@ -89,9 +89,13 @@ async def get_current_user_websocket(websocket: WebSocket) -> User:
 
 async def require_websocket_authority(websocket: WebSocket, authority: str) -> User:
     user = await get_current_user_websocket(websocket)
-    if authority not in (user.authorities or []):
+    if not _has_authority(user, authority):
         raise WebSocketException(
             code=status.WS_1008_POLICY_VIOLATION,
             reason=f"Missing authority: {authority}",
         )
     return user
+
+
+def _has_authority(user: User, authority: str) -> bool:
+    return authority in (user.authorities or [])
