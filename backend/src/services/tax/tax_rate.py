@@ -20,7 +20,7 @@ class TaxRateBreakdown:
 
 class TaxRateByReportingCodeService:
     def __init__(self, rates_path: Path | None = None) -> None:
-        base_dir = Path(__file__).resolve().parent.parent
+        base_dir = Path(__file__).resolve().parents[2]
         self._rates_path = rates_path or (base_dir / "static" / "ny_tax_rates.json")
         if not self._rates_path.exists():
             raise FileNotFoundError(f"Tax rates file not found: {self._rates_path}")
