@@ -322,14 +322,27 @@
     }
 
     .leaflet-tooltip.rate-only-tooltip {
-      border: 1px solid #0f766e;
       border-radius: 6px;
-      background: #0f766e;
       color: #ffffff;
       font-size: 12px;
       font-weight: 700;
       padding: 3px 7px;
       box-shadow: none;
+    }
+
+    .leaflet-tooltip.rate-only-tooltip.rate-only-tooltip-pending {
+      border: 1px solid #6b7280;
+      background: #6b7280;
+    }
+
+    .leaflet-tooltip.rate-only-tooltip.rate-only-tooltip-success {
+      border: 1px solid #0f766e;
+      background: #0f766e;
+    }
+
+    .leaflet-tooltip.rate-only-tooltip.rate-only-tooltip-error {
+      border: 1px solid #b91c1c;
+      background: #b91c1c;
     }
   </style>
 </head>
@@ -657,12 +670,22 @@
       fillColor: "#64748b",
       fillOpacity: 0.9,
     }).addTo(importMarkersLayer);
-    marker.bindTooltip("...", {
+    bindRateOnlyTooltip(marker, "...", "pending");
+    return marker;
+  }
+
+  function bindRateOnlyTooltip(marker, text, variant) {
+    const classSuffix = variant === "error"
+      ? "rate-only-tooltip-error"
+      : variant === "pending"
+        ? "rate-only-tooltip-pending"
+        : "rate-only-tooltip-success";
+    marker.unbindTooltip();
+    marker.bindTooltip(text, {
       direction: "top",
       offset: [0, -8],
-      className: "rate-only-tooltip",
+      className: `rate-only-tooltip ${classSuffix}`,
     });
-    return marker;
   }
 
   function updateImportMarkerSuccess(marker, compositeTaxRate) {
@@ -671,7 +694,7 @@
       color: "#ffffff",
       weight: 1.5,
     });
-    marker.setTooltipContent(formatRateForMarker(compositeTaxRate));
+    bindRateOnlyTooltip(marker, formatRateForMarker(compositeTaxRate), "success");
   }
 
   function updateImportMarkerFailure(marker) {
@@ -680,7 +703,7 @@
       color: "#ffffff",
       weight: 1.5,
     });
-    marker.setTooltipContent("0%");
+    bindRateOnlyTooltip(marker, "N/A", "error");
   }
 
   function renderRows(container, rows) {
