@@ -61,7 +61,7 @@ Results are checked against [NYS Jurisdiction/Rate Lookup](https://www8.tax.ny.g
 ### Monorepo Layout
 
 - `backend/` - FastAPI API + tax engine + imports pipeline.
-- `frontend/` - optional React/Vite app.
+- `frontend/` - React/Vite app.
 
 ### Backend Runtime Overview
 
@@ -143,7 +143,7 @@ Backend URLs:
 - MinIO API: `http://localhost:9000`
 - MinIO Console: `http://localhost:9001`
 
-### Frontend (optional)
+### Frontend
 
 ```bash
 cd frontend
@@ -151,7 +151,7 @@ docker-compose up --build -d
 ```
 
 Frontend URL:
-- `http://localhost:3000`
+- `http://localhost:5173`
 
 ## API Surface
 
