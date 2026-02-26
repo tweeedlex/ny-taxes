@@ -81,7 +81,7 @@ export function OrderTableRow({ order, index, isExpanded, onToggle }: OrderTable
 
         {/* Tax Rate */}
         <td className="px-4 py-3">
-          <div className="inline-flex items-center gap-1 text-xs font-mono px-1.5 py-0.5 rounded-md bg-amber-400/10 text-amber-400">
+          <div className="inline-flex items-center gap-1 text-xs font-mono px-1.5 py-0.5 rounded-md bg-secondary text-muted-foreground">
             <Percent className="w-2.5 h-2.5" />
             {(order.composite_tax_rate * 100).toFixed(4)}
           </div>
@@ -89,14 +89,14 @@ export function OrderTableRow({ order, index, isExpanded, onToggle }: OrderTable
 
         {/* Tax Amount */}
         <td className="px-4 py-3">
-          <span className="text-xs font-semibold text-amber-400">
+          <span className="text-xs font-semibold text-muted-foreground">
             {formatMoney(order.tax_amount)}
           </span>
         </td>
 
         {/* Total */}
         <td className="px-4 py-3">
-          <span className="text-xs font-bold text-emerald-400">
+          <span className="text-xs font-bold text-foreground">
             {formatMoney(order.total_amount)}
           </span>
         </td>
@@ -106,7 +106,7 @@ export function OrderTableRow({ order, index, isExpanded, onToggle }: OrderTable
           <Tooltip>
             <TooltipTrigger asChild>
               <button
-                className="flex items-center gap-0.5 text-zinc-600 hover:text-amber-400 transition-colors"
+                className="flex items-center gap-0.5 text-muted-foreground/40 hover:text-muted-foreground transition-colors"
                 onClick={(e) => e.stopPropagation()}
               >
                 {[
@@ -120,7 +120,7 @@ export function OrderTableRow({ order, index, isExpanded, onToggle }: OrderTable
                     className="w-3.5 h-3.5 rounded-sm"
                     style={{
                       background: rate > 0
-                        ? `rgba(251,191,36,${0.2 + i * 0.2})`
+                        ? `rgba(161,161,170,${0.2 + i * 0.2})`
                         : 'rgba(255,255,255,0.04)',
                     }}
                   />

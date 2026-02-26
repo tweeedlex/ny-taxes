@@ -28,17 +28,17 @@ export default function Layout() {
       {/* Sidebar */}
       <aside
         className="fixed left-0 top-0 h-full flex flex-col z-20 border-r border-border"
-        style={{ width: 'var(--sidebar-width)', background: 'hsl(240 10% 4.5%)' }}
+        style={{ width: 'var(--sidebar-width)', background: 'var(--sidebar)' }}
       >
         {/* Subtle top border accent */}
-        <div className="absolute top-0 left-0 right-0 h-px bg-zinc-700/60" />
+        <div className="absolute top-0 left-0 right-0 h-px bg-border" />
 
         {/* Logo */}
         <div className="relative px-4 py-5 flex items-center gap-3">
           <div
-            className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 bg-amber-400"
+            className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 bg-foreground"
           >
-            <MapPin className="w-4 h-4 text-zinc-950" strokeWidth={2.5} />
+            <MapPin className="w-4 h-4 text-background" strokeWidth={2.5} />
           </div>
           <div>
             <div className="text-sm font-bold text-foreground leading-none tracking-tight">
@@ -47,8 +47,8 @@ export default function Layout() {
             <div className="text-[10px] text-muted-foreground mt-0.5">Admin Panel v2</div>
           </div>
           <div className="ml-auto flex items-center gap-1.5">
-            <span className="pulse-dot w-1.5 h-1.5 rounded-full bg-emerald-400 block" />
-            <span className="text-[9px] text-emerald-400/80 font-medium">Live</span>
+            <span className="pulse-dot w-1.5 h-1.5 rounded-full bg-muted-foreground block" />
+            <span className="text-[9px] text-muted-foreground font-medium">Live</span>
           </div>
         </div>
 
@@ -86,12 +86,11 @@ export default function Layout() {
         {/* System status */}
         <div className="px-3 mb-2">
           <div
-            className="flex items-center gap-2 px-3 py-2 rounded-lg"
-            style={{ background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.15)' }}
+            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-secondary border border-border"
           >
-            <Activity className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+            <Activity className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
             <div className="flex-1 min-w-0">
-              <div className="text-[10px] text-emerald-400 font-medium">All systems normal</div>
+              <div className="text-[10px] text-foreground font-medium">All systems normal</div>
               <div className="text-[9px] text-muted-foreground/50">API · WS · MinIO</div>
             </div>
           </div>
@@ -114,7 +113,7 @@ export default function Layout() {
               <div className="text-xs font-semibold text-foreground truncate">Admin</div>
               <div className="text-[9px] text-muted-foreground/60 truncate">edit_orders · edit_users</div>
             </div>
-            <Zap className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+            <Zap className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
           </div>
           <button
             onClick={() => navigate('/login')}

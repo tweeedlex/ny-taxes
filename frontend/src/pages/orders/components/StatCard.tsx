@@ -31,25 +31,25 @@ type Accent = 'amber' | 'emerald' | 'neutral'
 
 const ACCENT_STYLES: Record<Accent, { icon: string; bg: string; trend: string; divider: string; spark: string }> = {
   amber: {
-    icon: 'text-amber-400',
-    bg: 'bg-amber-400/10',
-    trend: 'text-amber-400',
-    divider: 'border-amber-400/10',
-    spark: 'text-amber-400/40',
+    icon: 'text-foreground',
+    bg: 'bg-secondary',
+    trend: 'text-muted-foreground',
+    divider: 'border-border',
+    spark: 'text-muted-foreground/40',
   },
   emerald: {
-    icon: 'text-emerald-400',
-    bg: 'bg-emerald-400/10',
-    trend: 'text-emerald-400',
-    divider: 'border-emerald-400/10',
-    spark: 'text-emerald-400/40',
+    icon: 'text-foreground',
+    bg: 'bg-secondary',
+    trend: 'text-muted-foreground',
+    divider: 'border-border',
+    spark: 'text-muted-foreground/40',
   },
   neutral: {
-    icon: 'text-zinc-300',
-    bg: 'bg-zinc-700/60',
-    trend: 'text-zinc-400',
-    divider: 'border-zinc-700/60',
-    spark: 'text-zinc-500/60',
+    icon: 'text-foreground',
+    bg: 'bg-secondary',
+    trend: 'text-muted-foreground',
+    divider: 'border-border',
+    spark: 'text-muted-foreground/40',
   },
 }
 
@@ -77,7 +77,7 @@ export function StatCard({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, delay }}
     >
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-5 h-full">
+      <div className="rounded-xl border border-border bg-card p-5 h-full">
         <div className="flex items-start justify-between mb-4">
           <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${s.bg}`}>
             <Icon className={`w-4 h-4 ${s.icon}`} />
@@ -87,22 +87,22 @@ export function StatCard({
         <div className="space-y-1">
           <div className="flex items-baseline gap-0.5">
             {prefix && (
-              <span className="text-base font-semibold text-zinc-400">{prefix}</span>
+              <span className="text-base font-semibold text-muted-foreground">{prefix}</span>
             )}
             <CountUp
               to={value}
               duration={1.6}
               delay={delay}
               separator=","
-              className="text-[26px] font-bold text-zinc-50 tabular-nums leading-none"
+              className="text-[26px] font-bold text-foreground tabular-nums leading-none"
             />
             {suffix && (
-              <span className="text-sm font-medium text-zinc-400 ml-0.5">{suffix}</span>
+              <span className="text-sm font-medium text-muted-foreground ml-0.5">{suffix}</span>
             )}
           </div>
-          <div className="text-xs font-medium text-zinc-400">{label}</div>
+          <div className="text-xs font-medium text-muted-foreground">{label}</div>
           <div className={`flex items-center justify-between mt-2 pt-2 border-t ${s.divider}`}>
-            <span className="text-[10px] text-zinc-600">{subtitle}</span>
+            <span className="text-[10px] text-muted-foreground/60">{subtitle}</span>
             <span className={`text-[10px] font-semibold ${s.trend}`}>↑ {trend}</span>
           </div>
         </div>

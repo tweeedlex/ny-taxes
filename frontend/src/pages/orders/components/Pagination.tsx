@@ -32,10 +32,10 @@ export function Pagination({ page, totalPages, onPageChange }: PaginationProps) 
             key={i}
             variant={page === i ? 'default' : 'outline'}
             size="sm"
-            className={`h-7 w-7 p-0 text-xs border-zinc-700 ${
+            className={`h-7 w-7 p-0 text-xs border-border ${
               page === i
-                ? 'bg-amber-400 text-zinc-950 border-amber-400 hover:bg-amber-300 font-semibold'
-                : 'bg-transparent text-zinc-400 hover:text-zinc-200'
+                ? 'bg-primary text-primary-foreground border-primary font-semibold'
+                : 'bg-transparent text-muted-foreground hover:text-foreground'
             }`}
             onClick={() => onPageChange(i)}
           >

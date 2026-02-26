@@ -42,16 +42,16 @@ export function FilterBar({
         <Button
           variant="outline"
           size="sm"
-          className={`h-8 gap-1.5 text-sm border-zinc-700 bg-transparent ${
+          className={`h-8 gap-1.5 text-sm bg-transparent ${
             showFilters
-              ? 'border-amber-500/50 text-amber-400'
-              : 'text-zinc-400 hover:text-zinc-200 hover:border-zinc-600'
+              ? 'border-ring text-foreground'
+              : 'border-border text-muted-foreground hover:text-foreground'
           }`}
           onClick={onToggleFilters}
         >
           <SlidersHorizontal className="w-3.5 h-3.5" />
           Filters
-          {showFilters && <span className="w-1.5 h-1.5 rounded-full bg-amber-400 ml-0.5" />}
+          {showFilters && <span className="w-1.5 h-1.5 rounded-full bg-foreground ml-0.5" />}
         </Button>
 
         <div className="ml-auto flex items-center gap-2">
@@ -94,7 +94,7 @@ function SearchInput({ value, onChange }: { value: string; onChange: (v: string)
         placeholder="Search by ID, code, author…"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="pl-9 h-8 text-sm bg-zinc-900 border-zinc-700 focus-visible:ring-amber-500/40 text-zinc-200 placeholder:text-zinc-600"
+        className="pl-9 h-8 text-sm bg-card border-border focus-visible:ring-ring/40 text-foreground placeholder:text-muted-foreground"
       />
       {value && (
         <button

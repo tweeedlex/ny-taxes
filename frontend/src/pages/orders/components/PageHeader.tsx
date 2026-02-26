@@ -39,7 +39,7 @@ export function PageHeader() {
           </Tooltip>
           <Button
             size="sm"
-            className="h-8 gap-1.5 bg-amber-400 hover:bg-amber-300 text-zinc-950 font-semibold border-0"
+            className="h-8 gap-1.5 font-semibold"
           >
             <Plus className="w-3.5 h-3.5" />
             New Order

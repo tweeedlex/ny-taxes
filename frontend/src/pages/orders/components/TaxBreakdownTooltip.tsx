@@ -17,7 +17,7 @@ function toPercent(rate: number): string {
 function RateBar({ value }: { value: number }) {
   return (
     <div
-      className="h-1 rounded-full bg-amber-400/40"
+      className="h-1 rounded-full bg-muted-foreground/40"
       style={{ width: `${Math.round(value * 100 * 12)}px`, minWidth: 4 }}
     />
   )
@@ -79,7 +79,7 @@ export function TaxBreakdownTooltip({ order }: { order: Order }) {
 
       <div className="flex justify-between text-xs">
         <span className="font-semibold text-zinc-100">Composite</span>
-        <span className="font-mono font-bold text-amber-400">
+        <span className="font-mono font-bold text-foreground">
           {toPercent(order.composite_tax_rate)}
         </span>
       </div>

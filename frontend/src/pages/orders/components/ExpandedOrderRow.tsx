@@ -5,10 +5,10 @@ import type { Order, TaxBreakdown } from '@/types'
 type BreakdownKey = keyof TaxBreakdown
 
 const BREAKDOWN_ITEMS: { key: BreakdownKey; label: string; color: string }[] = [
-  { key: 'state_rate', label: 'State', color: '#a1a1aa' },
-  { key: 'county_rate', label: 'County', color: '#d4d4d8' },
-  { key: 'city_rate', label: 'City', color: '#fbbf24' },
-  { key: 'special_rates', label: 'Special', color: '#34d399' },
+  { key: 'state_rate', label: 'State', color: '#52525b' },
+  { key: 'county_rate', label: 'County', color: '#71717a' },
+  { key: 'city_rate', label: 'City', color: '#a1a1aa' },
+  { key: 'special_rates', label: 'Special', color: '#d4d4d8' },
 ]
 
 export function ExpandedOrderRow({ order, colSpan }: { order: Order; colSpan: number }) {
@@ -40,7 +40,7 @@ function JurisdictionsPanel({ order }: { order: Order }) {
           items.map((item) => (
             <div key={item.name} className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className="w-1.5 h-1.5 rounded-full bg-amber-400/60" />
+                <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground/60" />
                 <span className="text-xs text-zinc-400">{item.name}</span>
                 <Badge
                   variant="outline"
