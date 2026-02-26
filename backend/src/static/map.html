@@ -104,6 +104,50 @@
       color: var(--muted);
     }
 
+    .csv-progress-wrap {
+      width: 100%;
+      display: grid;
+      gap: 8px;
+    }
+
+    .csv-progress-track {
+      display: flex;
+      width: 100%;
+      height: 12px;
+      border-radius: 999px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      background: #e5e7eb;
+    }
+
+    .csv-progress-segment {
+      height: 100%;
+      transition: width 140ms linear;
+    }
+
+    .csv-progress-success {
+      background: #16a34a;
+      width: 0%;
+    }
+
+    .csv-progress-pending {
+      background: #9ca3af;
+      width: 100%;
+    }
+
+    .csv-progress-failed {
+      background: #dc2626;
+      width: 0%;
+    }
+
+    .csv-progress-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 14px;
+      font-size: 12px;
+      color: #334155;
+    }
+
     .tax-preview {
       background: var(--card);
       border: 1px solid var(--border);
@@ -314,6 +358,18 @@
     <button id="csvProcessBtn" type="button">Preview CSV Points</button>
     <div class="spacer"></div>
     <p id="csvStatus" class="upload-status">Upload CSV to render tax-rate markers from file rows.</p>
+    <div class="csv-progress-wrap">
+      <div class="csv-progress-track">
+        <div id="csvProgressSuccess" class="csv-progress-segment csv-progress-success"></div>
+        <div id="csvProgressPending" class="csv-progress-segment csv-progress-pending"></div>
+        <div id="csvProgressFailed" class="csv-progress-segment csv-progress-failed"></div>
+      </div>
+      <div class="csv-progress-meta">
+        <span id="csvSuccessCount">Success: 0</span>
+        <span id="csvPendingCount">Pending: 0</span>
+        <span id="csvFailedCount">Errors: 0</span>
+      </div>
+    </div>
   </section>
 
   <section class="tax-preview">
@@ -353,10 +409,6 @@
     </div>
 
     <div id="taxError" class="tax-error"></div>
-    <details>
-      <summary>Raw WS payload</summary>
-      <pre id="taxOutput">No data</pre>
-    </details>
   </section>
 
   <div id="map"></div>
@@ -376,7 +428,12 @@
   const csvFileInput = document.getElementById("csvFile");
   const csvProcessBtn = document.getElementById("csvProcessBtn");
   const csvStatus = document.getElementById("csvStatus");
-  const taxOutput = document.getElementById("taxOutput");
+  const csvProgressSuccess = document.getElementById("csvProgressSuccess");
+  const csvProgressPending = document.getElementById("csvProgressPending");
+  const csvProgressFailed = document.getElementById("csvProgressFailed");
+  const csvSuccessCount = document.getElementById("csvSuccessCount");
+  const csvPendingCount = document.getElementById("csvPendingCount");
+  const csvFailedCount = document.getElementById("csvFailedCount");
   const taxError = document.getElementById("taxError");
   const taxReportingCode = document.getElementById("taxReportingCode");
   const taxCompositeRate = document.getElementById("taxCompositeRate");
@@ -384,15 +441,19 @@
   const taxTotalAmount = document.getElementById("taxTotalAmount");
   const taxBreakdown = document.getElementById("taxBreakdown");
   const taxJurisdictions = document.getElementById("taxJurisdictions");
+  const RATE_SECTION_KEYS = ["state_rate", "county_rate", "city_rate", "special_rates"];
+  const MIN_SUPPORTED_DATE_UTC = Date.UTC(2025, 2, 1);
   const DEFAULT_PREVIEW_SUBTOTAL = 100;
   const CSV_PREVIEW_SUBTOTAL = 100;
-  const WS_RECONNECT_MS = 1500;
 
   if (!window.L || !window.proj4 || !window.shp) {
     taxError.textContent = "Map dependencies failed to load (Leaflet/proj4/shpjs).";
-    setOutput({
-      error: "Failed to initialize map dependencies.",
-      detail: "Check network access to unpkg.com or use local JS assets.",
+    updatePrettyPreview({
+      ok: false,
+      error: {
+        code: "dependencies_failed",
+        detail: "Failed to initialize map dependencies. Check network access to unpkg.com or use local JS assets.",
+      },
     });
   } else {
   proj4.defs(
@@ -408,14 +469,33 @@
 
   let clickMarker = null;
   const importMarkersLayer = L.layerGroup().addTo(map);
-  let ws = null;
-  let queuedPayload = null;
-  let pendingImportRequest = null;
+  let taxEngineReady = false;
+  let importRunning = false;
   let importQueue = [];
   let importStats = null;
+  let cityRegions = [];
+  let countyRegions = [];
+  let ratesByReportingCode = null;
 
-  function setOutput(payload) {
-    taxOutput.textContent = JSON.stringify(payload, null, 2);
+  function setCsvProgress(success, pending, failed, total) {
+    const normalizedTotal = Math.max(Number(total) || 0, 0);
+    const denominator = Math.max(normalizedTotal, 1);
+
+    const successWidth = normalizedTotal === 0 ? 0 : (Math.max(success, 0) / denominator) * 100;
+    const pendingWidth = normalizedTotal === 0 ? 100 : (Math.max(pending, 0) / denominator) * 100;
+    const failedWidth = normalizedTotal === 0 ? 0 : (Math.max(failed, 0) / denominator) * 100;
+
+    csvProgressSuccess.style.width = `${successWidth}%`;
+    csvProgressPending.style.width = `${pendingWidth}%`;
+    csvProgressFailed.style.width = `${failedWidth}%`;
+
+    csvSuccessCount.textContent = `Success: ${Math.max(success, 0)}`;
+    csvPendingCount.textContent = `Pending: ${Math.max(pending, 0)}`;
+    csvFailedCount.textContent = `Errors: ${Math.max(failed, 0)}`;
+  }
+
+  function resetCsvProgress() {
+    setCsvProgress(0, 0, 0, 0);
   }
 
   function formatMoney(value) {
@@ -445,18 +525,24 @@
   }
 
   function updateCsvStatus() {
-    if (!importStats) return;
-    const remaining = importQueue.length + (pendingImportRequest ? 1 : 0);
-    if (remaining > 0) {
+    if (!importStats) {
+      resetCsvProgress();
+      return;
+    }
+
+    const pending = Math.max(importStats.total - importStats.success - importStats.failed, 0);
+    setCsvProgress(importStats.success, pending, importStats.failed, importStats.total);
+
+    if (pending > 0) {
       setCsvStatus(
         `Processing ${importStats.done}/${importStats.total} rows` +
-          ` (ok: ${importStats.success}, failed: ${importStats.failed}, skipped: ${importStats.skipped}).`
+          ` (ok: ${importStats.success}, errors: ${importStats.failed}).`
       );
       return;
     }
     setCsvStatus(
       `Completed ${importStats.total} rows` +
-        ` (ok: ${importStats.success}, failed: ${importStats.failed}, skipped: ${importStats.skipped}).`
+        ` (ok: ${importStats.success}, errors: ${importStats.failed}).`
     );
     csvProcessBtn.disabled = false;
   }
@@ -529,10 +615,12 @@
     }
 
     const rows = [];
+    let totalRows = 0;
     let skipped = 0;
     for (let idx = headerLineIndex + 1; idx < lines.length; idx += 1) {
       const rawLine = lines[idx];
       if (!rawLine.trim()) continue;
+      totalRows += 1;
 
       const cells = parseCsvLine(rawLine);
       const longitudeRaw = extractCsvCell(cells, indexesByKey.longitude);
@@ -555,14 +643,10 @@
         continue;
       }
 
-      rows.push({
-        rowNumber: idx + 1,
-        latitude,
-        longitude,
-      });
+      rows.push({ latitude, longitude });
     }
 
-    return { rows, skipped };
+    return { rows, skipped, totalRows };
   }
 
   function createImportMarker(lat, lon) {
@@ -596,7 +680,7 @@
       color: "#ffffff",
       weight: 1.5,
     });
-    marker.setTooltipContent("N/A");
+    marker.setTooltipContent("0%");
   }
 
   function renderRows(container, rows) {
@@ -786,53 +870,339 @@
     };
   }
 
+  function normalizeReportingCode(rawReportingCode) {
+    const value = String(rawReportingCode || "").trim();
+    if (!value) return "";
+    if (/^\d+$/.test(value) && value.length <= 4) {
+      return value.padStart(4, "0");
+    }
+    return value;
+  }
+
+  function extractPolygonsFromGeometry(geometry) {
+    if (!geometry || !Array.isArray(geometry.coordinates)) return [];
+    if (geometry.type === "Polygon") return [geometry.coordinates];
+    if (geometry.type === "MultiPolygon") return geometry.coordinates;
+    return [];
+  }
+
+  function computePolygonBBox(polygons) {
+    let minLon = Infinity;
+    let minLat = Infinity;
+    let maxLon = -Infinity;
+    let maxLat = -Infinity;
+    for (const polygon of polygons) {
+      for (const ring of polygon) {
+        for (const coord of ring) {
+          if (!Array.isArray(coord) || coord.length < 2) continue;
+          const lon = Number(coord[0]);
+          const lat = Number(coord[1]);
+          if (!Number.isFinite(lon) || !Number.isFinite(lat)) continue;
+          if (lon < minLon) minLon = lon;
+          if (lon > maxLon) maxLon = lon;
+          if (lat < minLat) minLat = lat;
+          if (lat > maxLat) maxLat = lat;
+        }
+      }
+    }
+    if (!Number.isFinite(minLon)) return null;
+    return [minLon, minLat, maxLon, maxLat];
+  }
+
+  function buildRegionsFromCollections(collections) {
+    const regions = [];
+    for (const collection of collections) {
+      for (const feature of collection.features || []) {
+        const codeRaw =
+          feature && feature.properties ? feature.properties.REP_CODE ?? feature.properties.reporting_code : null;
+        const reportingCode = normalizeReportingCode(codeRaw);
+        if (!reportingCode) continue;
+
+        const polygons = extractPolygonsFromGeometry(feature && feature.geometry);
+        if (!polygons.length) continue;
+        const bbox = computePolygonBBox(polygons);
+        if (!bbox) continue;
+        regions.push({ reportingCode, polygons, bbox });
+      }
+    }
+    return regions;
+  }
+
+  function pointOnSegment(px, py, x1, y1, x2, y2) {
+    const eps = 1e-12;
+    const cross = (py - y1) * (x2 - x1) - (px - x1) * (y2 - y1);
+    if (Math.abs(cross) > eps) return false;
+    const minX = Math.min(x1, x2);
+    const maxX = Math.max(x1, x2);
+    const minY = Math.min(y1, y2);
+    const maxY = Math.max(y1, y2);
+    return px >= minX - eps && px <= maxX + eps && py >= minY - eps && py <= maxY + eps;
+  }
+
+  function pointInRing(lon, lat, ring) {
+    if (!Array.isArray(ring) || ring.length < 3) return false;
+    let inside = false;
+    let prevLon = Number(ring[ring.length - 1][0]);
+    let prevLat = Number(ring[ring.length - 1][1]);
+    for (const coord of ring) {
+      const currLon = Number(coord[0]);
+      const currLat = Number(coord[1]);
+      if (!Number.isFinite(currLon) || !Number.isFinite(currLat)) {
+        prevLon = currLon;
+        prevLat = currLat;
+        continue;
+      }
+
+      if (pointOnSegment(lon, lat, prevLon, prevLat, currLon, currLat)) {
+        return true;
+      }
+
+      if ((currLat > lat) !== (prevLat > lat)) {
+        const lonIntersection =
+          ((prevLon - currLon) * (lat - currLat)) / (prevLat - currLat) + currLon;
+        if (lon < lonIntersection) {
+          inside = !inside;
+        }
+      }
+      prevLon = currLon;
+      prevLat = currLat;
+    }
+    return inside;
+  }
+
+  function pointInRegion(lon, lat, region) {
+    const [minLon, minLat, maxLon, maxLat] = region.bbox;
+    if (!(minLon <= lon && lon <= maxLon && minLat <= lat && lat <= maxLat)) {
+      return false;
+    }
+    let inside = false;
+    for (const polygon of region.polygons) {
+      for (const ring of polygon) {
+        if (pointInRing(lon, lat, ring)) {
+          inside = !inside;
+        }
+      }
+    }
+    return inside;
+  }
+
+  function findReportingCodeInRegions(lat, lon, regions) {
+    for (const region of regions) {
+      if (pointInRegion(lon, lat, region)) {
+        return region.reportingCode;
+      }
+    }
+    return null;
+  }
+
+  function validateCoordinates(lat, lon) {
+    if (!Number.isFinite(lat) || lat < -90 || lat > 90) {
+      throw new Error("Latitude must be between -90 and 90.");
+    }
+    if (!Number.isFinite(lon) || lon < -180 || lon > 180) {
+      throw new Error("Longitude must be between -180 and 180.");
+    }
+  }
+
+  function validateTimestamp(timestampRaw) {
+    const parsed = new Date(timestampRaw);
+    if (Number.isNaN(parsed.getTime())) {
+      throw new Error("timestamp must be a valid ISO datetime.");
+    }
+    const parsedDateUtc = Date.UTC(
+      parsed.getUTCFullYear(),
+      parsed.getUTCMonth(),
+      parsed.getUTCDate()
+    );
+    if (parsedDateUtc < MIN_SUPPORTED_DATE_UTC) {
+      throw new Error("timestamp cannot be earlier than 2025-03-01");
+    }
+  }
+
+  function sumRates(items) {
+    return items.reduce((acc, item) => acc + Number(item.rate || 0), 0);
+  }
+
+  function roundHalfUp(value, scale) {
+    const factor = 10 ** scale;
+    return Math.round((Number(value) + Number.EPSILON) * factor) / factor;
+  }
+
+  function normalizeSubtotal(subtotalRaw) {
+    const value = Number(subtotalRaw);
+    if (!Number.isFinite(value) || value < 0) {
+      throw new Error("subtotal must be >= 0");
+    }
+    return roundHalfUp(value, 2);
+  }
+
+  function parseRatesSection(section, code, sectionName) {
+    if (!Array.isArray(section)) {
+      throw new Error(`Tax payload section '${sectionName}' must be an array for reporting_code=${code}.`);
+    }
+    return section.map((item, idx) => {
+      if (!item || typeof item !== "object") {
+        throw new Error(`Item ${idx} in '${sectionName}' must be an object for reporting_code=${code}.`);
+      }
+      const name = String(item.name || "").trim();
+      const rate = Number(item.rate);
+      if (!name || !Number.isFinite(rate)) {
+        throw new Error(
+          `Item ${idx} in '${sectionName}' must include valid 'name' and 'rate' for reporting_code=${code}.`
+        );
+      }
+      return { name, rate };
+    });
+  }
+
+  function parseTaxRatesPayload(raw) {
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+      throw new Error("Tax rates JSON root must be an object.");
+    }
+    const result = new Map();
+    for (const [rawCode, rawPayload] of Object.entries(raw)) {
+      const code = normalizeReportingCode(rawCode);
+      if (!code) continue;
+      if (!rawPayload || typeof rawPayload !== "object" || Array.isArray(rawPayload)) {
+        throw new Error(`Invalid tax payload for reporting_code=${code}.`);
+      }
+      const missing = RATE_SECTION_KEYS.filter((key) => !(key in rawPayload));
+      if (missing.length) {
+        throw new Error(`Missing sections ${missing.join(", ")} for reporting_code=${code}.`);
+      }
+      const unknown = Object.keys(rawPayload).filter((key) => !RATE_SECTION_KEYS.includes(key));
+      if (unknown.length) {
+        throw new Error(`Unknown sections ${unknown.join(", ")} for reporting_code=${code}.`);
+      }
+
+      result.set(code, {
+        state_rate: parseRatesSection(rawPayload.state_rate, code, "state_rate"),
+        county_rate: parseRatesSection(rawPayload.county_rate, code, "county_rate"),
+        city_rate: parseRatesSection(rawPayload.city_rate, code, "city_rate"),
+        special_rates: parseRatesSection(rawPayload.special_rates, code, "special_rates"),
+      });
+    }
+    return result;
+  }
+
+  async function loadTaxRates() {
+    const ratesUrl = new URL("./ny_tax_rates.json", window.location.href).href;
+    const response = await fetch(ratesUrl, { cache: "no-store" });
+    if (!response.ok) {
+      throw new Error(`Failed to load tax rates: HTTP ${response.status}`);
+    }
+    const raw = await response.json();
+    ratesByReportingCode = parseTaxRatesPayload(raw);
+  }
+
+  function findReportingCodeByCoordinates(lat, lon) {
+    const cityCode = findReportingCodeInRegions(lat, lon, cityRegions);
+    if (cityCode) return cityCode;
+    const countyCode = findReportingCodeInRegions(lat, lon, countyRegions);
+    if (countyCode) return countyCode;
+    return null;
+  }
+
+  function calculateTaxPreviewLocally(payload) {
+    try {
+      validateCoordinates(payload.latitude, payload.longitude);
+      validateTimestamp(payload.timestamp);
+      const subtotal = normalizeSubtotal(payload.subtotal);
+
+      const reportingCode = findReportingCodeByCoordinates(payload.latitude, payload.longitude);
+      if (!reportingCode) {
+        throw new Error("Delivery point is outside New York State coverage.");
+      }
+
+      const jurisdictions = ratesByReportingCode.get(normalizeReportingCode(reportingCode));
+      if (!jurisdictions) {
+        throw new Error(`Tax rate not found for reporting code ${reportingCode}.`);
+      }
+
+      const stateRate = roundHalfUp(sumRates(jurisdictions.state_rate), 5);
+      const countyRate = roundHalfUp(sumRates(jurisdictions.county_rate), 5);
+      const cityRate = roundHalfUp(sumRates(jurisdictions.city_rate), 5);
+      const specialRates = roundHalfUp(sumRates(jurisdictions.special_rates), 5);
+      const compositeTaxRate = roundHalfUp(stateRate + countyRate + cityRate + specialRates, 5);
+      const taxAmount = roundHalfUp(subtotal * compositeTaxRate, 2);
+      const totalAmount = roundHalfUp(subtotal + taxAmount, 2);
+
+      return {
+        ok: true,
+        result: {
+          reporting_code: normalizeReportingCode(reportingCode),
+          jurisdictions,
+          composite_tax_rate: compositeTaxRate,
+          tax_amount: taxAmount,
+          total_amount: totalAmount,
+          breakdown: {
+            state_rate: stateRate,
+            county_rate: countyRate,
+            city_rate: cityRate,
+            special_rates: specialRates,
+          },
+        },
+      };
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : "Unexpected local calculation error.";
+      let code = "validation_error";
+      if (detail.includes("outside New York State coverage")) {
+        code = "outside_coverage";
+      } else if (detail.includes("Tax rate not found")) {
+        code = "tax_rate_not_found";
+      }
+      return {
+        ok: false,
+        error: { code, detail },
+      };
+    }
+  }
+
   async function loadShapefileLayer(baseName, style) {
     const shpUrl = new URL(`./shapefiles/${baseName}.shp`, window.location.href).href;
     const raw = await shp(shpUrl);
-    const collections = normalizeFeatureCollections(raw).map(
-      convertGeoJsonToWgs84IfNeeded
-    );
+    const collections = normalizeFeatureCollections(raw).map(convertGeoJsonToWgs84IfNeeded);
     const allLayers = [];
     for (const collection of collections) {
       const layer = L.geoJSON(collection, { style }).addTo(map);
       allLayers.push(layer);
     }
-    return allLayers;
+    return {
+      layers: allLayers,
+      regions: buildRegionsFromCollections(collections),
+    };
   }
 
   async function loadBoundaryLayers() {
-    try {
-      const layerGroups = await Promise.all([
-        loadShapefileLayer("Counties", {
-          color: "#1d4ed8",
-          weight: 1.3,
-          fillColor: "#93c5fd",
-          fillOpacity: 0.08,
-        }),
-        loadShapefileLayer("Cities", {
-          color: "#ea580c",
-          weight: 1,
-          fillColor: "#fdba74",
-          fillOpacity: 0.2,
-        }),
-      ]);
+    const [countiesLayer, citiesLayer] = await Promise.all([
+      loadShapefileLayer("Counties", {
+        color: "#1d4ed8",
+        weight: 1.3,
+        fillColor: "#93c5fd",
+        fillOpacity: 0.08,
+      }),
+      loadShapefileLayer("Cities", {
+        color: "#ea580c",
+        weight: 1,
+        fillColor: "#fdba74",
+        fillOpacity: 0.2,
+      }),
+    ]);
 
-      const bounds = L.latLngBounds([]);
-      for (const group of layerGroups) {
-        for (const layer of group) {
-          if (layer.getBounds && layer.getBounds().isValid()) {
-            bounds.extend(layer.getBounds());
-          }
+    countyRegions = countiesLayer.regions;
+    cityRegions = citiesLayer.regions;
+
+    const bounds = L.latLngBounds([]);
+    const layerGroups = [countiesLayer.layers, citiesLayer.layers];
+    for (const group of layerGroups) {
+      for (const layer of group) {
+        if (layer.getBounds && layer.getBounds().isValid()) {
+          bounds.extend(layer.getBounds());
         }
       }
-      if (bounds.isValid()) {
-        map.fitBounds(bounds, { padding: [20, 20] });
-      }
-    } catch (error) {
-      setOutput({
-        error: "Failed to load shapefiles",
-        detail: String(error),
-      });
+    }
+    if (bounds.isValid()) {
+      map.fitBounds(bounds, { padding: [20, 20] });
     }
   }
 
@@ -866,49 +1236,46 @@
   }
 
   function isImportProcessing() {
-    return pendingImportRequest !== null || importQueue.length > 0;
+    return importRunning || importQueue.length > 0;
   }
 
-  function processImportQueue() {
-    if (!isImportProcessing()) {
+  async function processImportQueueLocally() {
+    if (!importStats || !importQueue.length) {
       updateCsvStatus();
       return;
     }
-    if (pendingImportRequest) return;
-    if (!ws || ws.readyState !== WebSocket.OPEN) {
-      setCsvStatus("Waiting for websocket reconnection to continue CSV processing...");
-      return;
-    }
-    pendingImportRequest = importQueue.shift() || null;
-    if (!pendingImportRequest) {
-      updateCsvStatus();
-      return;
-    }
-    ws.send(JSON.stringify(pendingImportRequest.payload));
+    importRunning = true;
     updateCsvStatus();
-  }
 
-  function handleImportResponse(data) {
-    if (!pendingImportRequest || !importStats) return false;
+    while (importQueue.length) {
+      const request = importQueue.shift();
+      const result = calculateTaxPreviewLocally(request.payload);
+      importStats.done += 1;
 
-    const request = pendingImportRequest;
-    pendingImportRequest = null;
-    importStats.done += 1;
+      if (result && result.ok === true && result.result) {
+        updateImportMarkerSuccess(request.marker, result.result.composite_tax_rate);
+        importStats.success += 1;
+      } else {
+        updateImportMarkerFailure(request.marker);
+        importStats.failed += 1;
+      }
 
-    if (data && data.ok === true && data.result) {
-      updateImportMarkerSuccess(request.marker, data.result.composite_tax_rate);
-      importStats.success += 1;
-    } else {
-      updateImportMarkerFailure(request.marker);
-      importStats.failed += 1;
+      if (importStats.done % 100 === 0) {
+        updateCsvStatus();
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      }
     }
 
-    processImportQueue();
+    importRunning = false;
     updateCsvStatus();
-    return true;
   }
 
   async function processCsvFileForMarkers() {
+    if (!taxEngineReady) {
+      setCsvStatus("Local tax engine is not ready yet.");
+      return;
+    }
+
     const file = csvFileInput.files && csvFileInput.files[0];
     if (!file) {
       setCsvStatus("Select a CSV file first.");
@@ -932,8 +1299,8 @@
     }
 
     importMarkersLayer.clearLayers();
-    pendingImportRequest = null;
     importQueue = [];
+    importRunning = false;
 
     const bounds = L.latLngBounds([]);
     for (const row of parsed.rows) {
@@ -946,15 +1313,15 @@
     }
 
     importStats = {
-      total: importQueue.length,
-      done: 0,
+      total: parsed.totalRows,
+      done: parsed.skipped,
       success: 0,
-      failed: 0,
-      skipped: parsed.skipped,
+      failed: parsed.skipped,
     };
 
-    if (!importQueue.length) {
-      setCsvStatus(`No valid rows found. Skipped: ${parsed.skipped}.`);
+    if (parsed.totalRows === 0) {
+      setCsvStatus("No data rows found in CSV.");
+      resetCsvProgress();
       csvProcessBtn.disabled = false;
       return;
     }
@@ -964,7 +1331,13 @@
     if (bounds.isValid()) {
       map.fitBounds(bounds, { padding: [20, 20] });
     }
-    processImportQueue();
+
+    if (!importQueue.length) {
+      updateCsvStatus();
+      return;
+    }
+
+    await processImportQueueLocally();
   }
 
   function sendTaxPreview(lat, lon) {
@@ -973,20 +1346,21 @@
       return;
     }
 
-    const payload = buildPayload(lat, lon);
-    queuedPayload = payload;
-
-    if (!ws || ws.readyState !== WebSocket.OPEN) {
+    if (!taxEngineReady) {
       const waitingPayload = {
-        info: "Waiting for websocket connection...",
-        request: payload,
+        ok: false,
+        error: {
+          code: "engine_not_ready",
+          detail: "Local tax engine is still initializing.",
+        },
       };
-      setOutput(waitingPayload);
       updatePrettyPreview(waitingPayload);
       return;
     }
 
-    ws.send(JSON.stringify(payload));
+    const payload = buildPayload(lat, lon);
+    const result = calculateTaxPreviewLocally(payload);
+    updatePrettyPreview(result);
   }
 
   function handleCoordinates(lat, lon, shouldCenter) {
@@ -1015,48 +1389,26 @@
     };
   }
 
-  function connectWs() {
-    const protocol = location.protocol === "https:" ? "wss:" : "ws:";
-    const url = `${protocol}//${location.host}/orders/tax/ws`;
-    ws = new WebSocket(url);
-
-    ws.onopen = () => {
+  async function initializeLocalTaxEngine() {
+    taxEngineReady = false;
+    setCsvStatus("Initializing local tax engine...");
+    try {
+      await Promise.all([loadBoundaryLayers(), loadTaxRates()]);
+      taxEngineReady = true;
+      setCsvStatus("Local tax engine is ready. Upload CSV or pick a point on map.");
       taxError.textContent = "";
-      if (!isImportProcessing() && queuedPayload) {
-        ws.send(JSON.stringify(queuedPayload));
-      }
-      processImportQueue();
-    };
-
-    ws.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        if (handleImportResponse(data)) return;
-        setOutput(data);
-        updatePrettyPreview(data);
-      } catch (_) {
-        const rawPayload = { raw: event.data };
-        if (handleImportResponse(rawPayload)) return;
-        setOutput(rawPayload);
-        updatePrettyPreview(rawPayload);
-      }
-    };
-
-    ws.onerror = () => {
-      taxError.textContent = "WebSocket error.";
-    };
-
-    ws.onclose = () => {
-      if (pendingImportRequest) {
-        importQueue.unshift(pendingImportRequest);
-        pendingImportRequest = null;
-      }
-      taxError.textContent = "WebSocket disconnected. Reconnecting...";
-      if (isImportProcessing()) {
-        setCsvStatus("WebSocket disconnected. Waiting for reconnect to resume CSV processing...");
-      }
-      setTimeout(connectWs, WS_RECONNECT_MS);
-    };
+    } catch (error) {
+      taxEngineReady = false;
+      const payload = {
+        ok: false,
+        error: {
+          code: "engine_init_failed",
+          detail: String(error),
+        },
+      };
+      updatePrettyPreview(payload);
+      setCsvStatus("Failed to initialize local tax engine.");
+    }
   }
 
   const onInputChanged = debounce(() => {
@@ -1093,9 +1445,8 @@
     handleCoordinates(lat, lon, false);
   });
 
-  loadBoundaryLayers();
   resetPrettyPreview();
-  connectWs();
+  initializeLocalTaxEngine();
   }
 </script>
 </body>
