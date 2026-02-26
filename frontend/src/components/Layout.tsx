@@ -12,6 +12,7 @@ import {
 import { cn } from '@/lib/utils'
 import { Separator } from './ui/separator'
 import { Badge } from './ui/badge'
+import { ThemeToggle } from './ThemeToggle'
 
 const NAV_ITEMS = [
   { to: '/orders', icon: ShoppingCart, label: 'Orders', badge: '1.2k' },
@@ -46,10 +47,7 @@ export default function Layout() {
             </div>
             <div className="text-[10px] text-muted-foreground mt-0.5">Admin Panel v2</div>
           </div>
-          <div className="ml-auto flex items-center gap-1.5">
-            <span className="pulse-dot w-1.5 h-1.5 rounded-full bg-muted-foreground block" />
-            <span className="text-[9px] text-muted-foreground font-medium">Live</span>
-          </div>
+          <ThemeToggle className='justify-end p-4 ml-auto'/>
         </div>
 
         <div className="px-3">
