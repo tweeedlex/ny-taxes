@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cd /d/programming/pet/current/ny-taxes && npm create vite@latest frontend -- --template react-ts 2>&1)",
+      "Bash(cd /d/programming/pet/current/ny-taxes/frontend && npm install 2>&1)"
+    ]
+  },
+  "hooks": {
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd /d/programming/pet/current/ny-taxes/frontend && npx tsc -b 2>&1 | head -50"
+          }
+        ]
+      }
+    ]
+  }
+}
