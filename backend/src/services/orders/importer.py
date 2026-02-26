@@ -6,6 +6,7 @@ from datetime import datetime
 from decimal import Decimal
 from urllib.parse import unquote, urlsplit
 
+from src.core.date_rules import ensure_min_supported_datetime
 from src.core.storage import MinioStorage
 from src.models.file_task import FileTask
 from src.models.order import Order
@@ -370,7 +371,9 @@ def _parse_import_timestamp(raw_timestamp: str) -> datetime:
         raise ValueError("timestamp is empty")
 
     if "." not in clean:
-        return datetime.fromisoformat(clean)
+        parsed = datetime.fromisoformat(clean)
+        ensure_min_supported_datetime(parsed, "timestamp")
+        return parsed
 
     base, rest = clean.split(".", 1)
     tz_start = len(rest)
@@ -384,7 +387,9 @@ def _parse_import_timestamp(raw_timestamp: str) -> datetime:
     normalized = f"{base}.{frac}{tz}"
     if normalized.endswith("Z") or normalized.endswith("z"):
         normalized = f"{normalized[:-1]}+00:00"
-    return datetime.fromisoformat(normalized)
+    parsed = datetime.fromisoformat(normalized)
+    ensure_min_supported_datetime(parsed, "timestamp")
+    return parsed
 
 
 async def _update_file_task_progress(

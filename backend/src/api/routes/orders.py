@@ -1,4 +1,5 @@
 import asyncio
+import json
 import logging
 from datetime import datetime
 from decimal import Decimal
@@ -27,6 +28,7 @@ from src.api.deps import (
     require_websocket_authority,
 )
 from src.core.authorities import EDIT_ORDERS, READ_ORDERS
+from src.core.date_rules import ensure_min_supported_datetime
 from src.core.storage import MinioStorage
 from src.models.file_task import FileTask
 from src.models.order import Order
@@ -164,9 +166,23 @@ async def list_orders(
         query = query.filter(reporting_code=normalized_reporting_code)
 
     if timestamp_from is not None:
+        try:
+            ensure_min_supported_datetime(timestamp_from, "timestamp_from")
+        except ValueError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=str(exc),
+            ) from exc
         query = query.filter(timestamp__gte=timestamp_from)
 
     if timestamp_to is not None:
+        try:
+            ensure_min_supported_datetime(timestamp_to, "timestamp_to")
+        except ValueError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=str(exc),
+            ) from exc
         query = query.filter(timestamp__lte=timestamp_to)
 
     if subtotal_min is not None and subtotal_max is not None and subtotal_min > subtotal_max:
@@ -273,7 +289,7 @@ async def tax_preview_websocket(websocket: WebSocket) -> None:
                         "error": {
                             "code": "validation_error",
                             "detail": "Payload validation failed.",
-                            "fields": exc.errors(),
+                            "fields": json.loads(exc.json()),
                         },
                     }
                 )

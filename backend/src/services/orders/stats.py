@@ -1,15 +1,18 @@
 from datetime import date, datetime, time, timedelta
 from decimal import Decimal, ROUND_HALF_UP
 
+from src.core.date_rules import ensure_min_supported_date
 from src.models.order import Order
 from src.schemas.order import OrdersStatsDay, OrdersStatsResponse
 
 
 def parse_stats_date_param(name: str, value: str) -> date:
     try:
-        return datetime.strptime(value, "%Y.%m.%d").date()
+        parsed = datetime.strptime(value, "%Y.%m.%d").date()
     except ValueError as exc:
         raise ValueError(f"{name} must be in format YYYY.MM.DD") from exc
+    ensure_min_supported_date(parsed, name)
+    return parsed
 
 
 def build_datetime_range(start_date: date, end_date: date) -> tuple[datetime, datetime]:
