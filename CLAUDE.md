@@ -64,6 +64,13 @@ npx playwright test                  # e2e tests (requires dev server running)
 
 **Env vars** (baked at build time): `VITE_API_URL`, `VITE_WS_URL`.
 
+Frontend development guidelines:
+- Use and create reusable components
+- When building complex reusable component, consider using the React Compound Component Pattern for flexibility.
+- Use hooks for state and side effect management in functional components.
+- Follow the SOLID principles for clean, maintainable code.
+- Use the playwright MCP server when designing layouts to take a view of the results
+
 ### Static Data
 `backend/src/static/ny_tax_rates.json` — tax rates keyed by reporting code.
 `backend/src/static/shapefiles/Cities.*`, `Counties.*` — NY boundary shapefiles.
