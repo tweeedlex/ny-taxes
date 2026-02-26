@@ -66,6 +66,44 @@
       background: #fff;
     }
 
+    button {
+      border: 1px solid #0f766e;
+      border-radius: 8px;
+      padding: 8px 12px;
+      font: inherit;
+      font-weight: 600;
+      color: #ffffff;
+      background: #0f766e;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .upload-row {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: end;
+      gap: 10px;
+    }
+
+    .upload-row .spacer {
+      flex: 1 1 200px;
+      min-width: 200px;
+    }
+
+    .upload-status {
+      margin: 0;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
     .tax-preview {
       background: var(--card);
       border: 1px solid var(--border);
@@ -238,6 +276,17 @@
       font-size: 12px;
       line-height: 1.35;
     }
+
+    .leaflet-tooltip.rate-only-tooltip {
+      border: 1px solid #0f766e;
+      border-radius: 6px;
+      background: #0f766e;
+      color: #ffffff;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 3px 7px;
+      box-shadow: none;
+    }
   </style>
 </head>
 <body>
@@ -255,6 +304,16 @@
       Subtotal
       <input id="subtotal" type="number" step="0.01" min="0" value="100" placeholder="e.g. 120.00" />
     </label>
+  </section>
+
+  <section class="upload-row">
+    <label>
+      CSV file
+      <input id="csvFile" type="file" accept=".csv,text/csv" />
+    </label>
+    <button id="csvProcessBtn" type="button">Preview CSV Points</button>
+    <div class="spacer"></div>
+    <p id="csvStatus" class="upload-status">Upload CSV to render tax-rate markers from file rows.</p>
   </section>
 
   <section class="tax-preview">
@@ -314,6 +373,9 @@
   const latInput = document.getElementById("latitude");
   const lonInput = document.getElementById("longitude");
   const subtotalInput = document.getElementById("subtotal");
+  const csvFileInput = document.getElementById("csvFile");
+  const csvProcessBtn = document.getElementById("csvProcessBtn");
+  const csvStatus = document.getElementById("csvStatus");
   const taxOutput = document.getElementById("taxOutput");
   const taxError = document.getElementById("taxError");
   const taxReportingCode = document.getElementById("taxReportingCode");
@@ -323,6 +385,7 @@
   const taxBreakdown = document.getElementById("taxBreakdown");
   const taxJurisdictions = document.getElementById("taxJurisdictions");
   const DEFAULT_PREVIEW_SUBTOTAL = 100;
+  const CSV_PREVIEW_SUBTOTAL = 100;
   const WS_RECONNECT_MS = 1500;
 
   if (!window.L || !window.proj4 || !window.shp) {
@@ -344,8 +407,12 @@
   }).addTo(map);
 
   let clickMarker = null;
+  const importMarkersLayer = L.layerGroup().addTo(map);
   let ws = null;
   let queuedPayload = null;
+  let pendingImportRequest = null;
+  let importQueue = [];
+  let importStats = null;
 
   function setOutput(payload) {
     taxOutput.textContent = JSON.stringify(payload, null, 2);
@@ -366,6 +433,170 @@
     const num = Number(value);
     if (!Number.isFinite(num)) return "-";
     return `${(num * 100).toFixed(3).replace(/\.?0+$/, "")}%`;
+  }
+
+  function formatRateForMarker(value) {
+    const formatted = formatRate(value);
+    return formatted.replace(".", ",");
+  }
+
+  function setCsvStatus(text) {
+    csvStatus.textContent = text;
+  }
+
+  function updateCsvStatus() {
+    if (!importStats) return;
+    const remaining = importQueue.length + (pendingImportRequest ? 1 : 0);
+    if (remaining > 0) {
+      setCsvStatus(
+        `Processing ${importStats.done}/${importStats.total} rows` +
+          ` (ok: ${importStats.success}, failed: ${importStats.failed}, skipped: ${importStats.skipped}).`
+      );
+      return;
+    }
+    setCsvStatus(
+      `Completed ${importStats.total} rows` +
+        ` (ok: ${importStats.success}, failed: ${importStats.failed}, skipped: ${importStats.skipped}).`
+    );
+    csvProcessBtn.disabled = false;
+  }
+
+  function normalizeHeaderKey(rawValue) {
+    return String(rawValue || "")
+      .trim()
+      .toLowerCase()
+      .replaceAll("_", "")
+      .replaceAll(" ", "");
+  }
+
+  function parseCsvLine(line) {
+    const result = [];
+    let current = "";
+    let inQuotes = false;
+    for (let idx = 0; idx < line.length; idx += 1) {
+      const char = line[idx];
+      if (char === '"') {
+        if (inQuotes && idx + 1 < line.length && line[idx + 1] === '"') {
+          current += '"';
+          idx += 1;
+        } else {
+          inQuotes = !inQuotes;
+        }
+        continue;
+      }
+      if (char === "," && !inQuotes) {
+        result.push(current);
+        current = "";
+        continue;
+      }
+      current += char;
+    }
+    result.push(current);
+    return result;
+  }
+
+  function extractCsvCell(cells, index) {
+    if (index < 0 || index >= cells.length) return "";
+    return String(cells[index] || "").trim();
+  }
+
+  function parseImportCsv(text) {
+    const normalizedText = String(text || "").replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+    const lines = normalizedText.split("\n");
+    let headerLineIndex = -1;
+    let headers = [];
+    for (let idx = 0; idx < lines.length; idx += 1) {
+      if (!lines[idx].trim()) continue;
+      headerLineIndex = idx;
+      headers = parseCsvLine(lines[idx]);
+      break;
+    }
+
+    if (headerLineIndex === -1 || !headers.length) {
+      throw new Error("CSV file is empty or has no header.");
+    }
+
+    const indexesByKey = {};
+    headers.forEach((header, index) => {
+      const key = normalizeHeaderKey(header);
+      if (key) indexesByKey[key] = index;
+    });
+
+    const requiredKeys = ["longitude", "latitude", "timestamp", "subtotal"];
+    const missing = requiredKeys.filter((key) => !(key in indexesByKey));
+    if (missing.length) {
+      throw new Error(`Missing required CSV columns: ${missing.join(", ")}`);
+    }
+
+    const rows = [];
+    let skipped = 0;
+    for (let idx = headerLineIndex + 1; idx < lines.length; idx += 1) {
+      const rawLine = lines[idx];
+      if (!rawLine.trim()) continue;
+
+      const cells = parseCsvLine(rawLine);
+      const longitudeRaw = extractCsvCell(cells, indexesByKey.longitude);
+      const latitudeRaw = extractCsvCell(cells, indexesByKey.latitude);
+      const timestampRaw = extractCsvCell(cells, indexesByKey.timestamp);
+      const subtotalRaw = extractCsvCell(cells, indexesByKey.subtotal);
+      if (!longitudeRaw || !latitudeRaw || !timestampRaw || !subtotalRaw) {
+        skipped += 1;
+        continue;
+      }
+
+      const longitude = Number(longitudeRaw);
+      const latitude = Number(latitudeRaw);
+      if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+        skipped += 1;
+        continue;
+      }
+      if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
+        skipped += 1;
+        continue;
+      }
+
+      rows.push({
+        rowNumber: idx + 1,
+        latitude,
+        longitude,
+      });
+    }
+
+    return { rows, skipped };
+  }
+
+  function createImportMarker(lat, lon) {
+    const marker = L.circleMarker([lat, lon], {
+      radius: 6,
+      color: "#ffffff",
+      weight: 1.5,
+      fillColor: "#64748b",
+      fillOpacity: 0.9,
+    }).addTo(importMarkersLayer);
+    marker.bindTooltip("...", {
+      direction: "top",
+      offset: [0, -8],
+      className: "rate-only-tooltip",
+    });
+    return marker;
+  }
+
+  function updateImportMarkerSuccess(marker, compositeTaxRate) {
+    marker.setStyle({
+      fillColor: "#0f766e",
+      color: "#ffffff",
+      weight: 1.5,
+    });
+    marker.setTooltipContent(formatRateForMarker(compositeTaxRate));
+  }
+
+  function updateImportMarkerFailure(marker) {
+    marker.setStyle({
+      fillColor: "#b91c1c",
+      color: "#ffffff",
+      weight: 1.5,
+    });
+    marker.setTooltipContent("N/A");
   }
 
   function renderRows(container, rows) {
@@ -620,9 +851,10 @@
     }).addTo(map);
   }
 
-  function buildPayload(lat, lon) {
-    const subtotalRaw = parseInputNumber(subtotalInput);
-    const subtotal = subtotalRaw !== null && subtotalRaw >= 0
+  function buildPayload(lat, lon, subtotalOverride = null) {
+    const subtotalRaw =
+      subtotalOverride === null ? parseInputNumber(subtotalInput) : Number(subtotalOverride);
+    const subtotal = Number.isFinite(subtotalRaw) && subtotalRaw >= 0
       ? Number(subtotalRaw.toFixed(2))
       : DEFAULT_PREVIEW_SUBTOTAL;
     return {
@@ -633,7 +865,114 @@
     };
   }
 
+  function isImportProcessing() {
+    return pendingImportRequest !== null || importQueue.length > 0;
+  }
+
+  function processImportQueue() {
+    if (!isImportProcessing()) {
+      updateCsvStatus();
+      return;
+    }
+    if (pendingImportRequest) return;
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+      setCsvStatus("Waiting for websocket reconnection to continue CSV processing...");
+      return;
+    }
+    pendingImportRequest = importQueue.shift() || null;
+    if (!pendingImportRequest) {
+      updateCsvStatus();
+      return;
+    }
+    ws.send(JSON.stringify(pendingImportRequest.payload));
+    updateCsvStatus();
+  }
+
+  function handleImportResponse(data) {
+    if (!pendingImportRequest || !importStats) return false;
+
+    const request = pendingImportRequest;
+    pendingImportRequest = null;
+    importStats.done += 1;
+
+    if (data && data.ok === true && data.result) {
+      updateImportMarkerSuccess(request.marker, data.result.composite_tax_rate);
+      importStats.success += 1;
+    } else {
+      updateImportMarkerFailure(request.marker);
+      importStats.failed += 1;
+    }
+
+    processImportQueue();
+    updateCsvStatus();
+    return true;
+  }
+
+  async function processCsvFileForMarkers() {
+    const file = csvFileInput.files && csvFileInput.files[0];
+    if (!file) {
+      setCsvStatus("Select a CSV file first.");
+      return;
+    }
+
+    let text = "";
+    try {
+      text = await file.text();
+    } catch (_) {
+      setCsvStatus("Failed to read file.");
+      return;
+    }
+
+    let parsed;
+    try {
+      parsed = parseImportCsv(text);
+    } catch (error) {
+      setCsvStatus(String(error));
+      return;
+    }
+
+    importMarkersLayer.clearLayers();
+    pendingImportRequest = null;
+    importQueue = [];
+
+    const bounds = L.latLngBounds([]);
+    for (const row of parsed.rows) {
+      const marker = createImportMarker(row.latitude, row.longitude);
+      importQueue.push({
+        marker,
+        payload: buildPayload(row.latitude, row.longitude, CSV_PREVIEW_SUBTOTAL),
+      });
+      bounds.extend([row.latitude, row.longitude]);
+    }
+
+    importStats = {
+      total: importQueue.length,
+      done: 0,
+      success: 0,
+      failed: 0,
+      skipped: parsed.skipped,
+    };
+
+    if (!importQueue.length) {
+      setCsvStatus(`No valid rows found. Skipped: ${parsed.skipped}.`);
+      csvProcessBtn.disabled = false;
+      return;
+    }
+
+    csvProcessBtn.disabled = true;
+    updateCsvStatus();
+    if (bounds.isValid()) {
+      map.fitBounds(bounds, { padding: [20, 20] });
+    }
+    processImportQueue();
+  }
+
   function sendTaxPreview(lat, lon) {
+    if (isImportProcessing()) {
+      taxError.textContent = "CSV processing is running. Wait until it completes.";
+      return;
+    }
+
     const payload = buildPayload(lat, lon);
     queuedPayload = payload;
 
@@ -683,18 +1022,21 @@
 
     ws.onopen = () => {
       taxError.textContent = "";
-      if (queuedPayload) {
+      if (!isImportProcessing() && queuedPayload) {
         ws.send(JSON.stringify(queuedPayload));
       }
+      processImportQueue();
     };
 
     ws.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
+        if (handleImportResponse(data)) return;
         setOutput(data);
         updatePrettyPreview(data);
       } catch (_) {
         const rawPayload = { raw: event.data };
+        if (handleImportResponse(rawPayload)) return;
         setOutput(rawPayload);
         updatePrettyPreview(rawPayload);
       }
@@ -705,7 +1047,14 @@
     };
 
     ws.onclose = () => {
+      if (pendingImportRequest) {
+        importQueue.unshift(pendingImportRequest);
+        pendingImportRequest = null;
+      }
       taxError.textContent = "WebSocket disconnected. Reconnecting...";
+      if (isImportProcessing()) {
+        setCsvStatus("WebSocket disconnected. Waiting for reconnect to resume CSV processing...");
+      }
       setTimeout(connectWs, WS_RECONNECT_MS);
     };
   }
@@ -720,6 +1069,21 @@
   latInput.addEventListener("input", onInputChanged);
   lonInput.addEventListener("input", onInputChanged);
   subtotalInput.addEventListener("input", onInputChanged);
+  csvProcessBtn.addEventListener("click", () => {
+    csvProcessBtn.disabled = true;
+    processCsvFileForMarkers()
+      .catch(() => {
+        setCsvStatus("Unexpected error while processing CSV.");
+      })
+      .finally(() => {
+        if (!isImportProcessing()) {
+          csvProcessBtn.disabled = false;
+        }
+      });
+  });
+  csvFileInput.addEventListener("change", () => {
+    setCsvStatus("File selected. Click \"Preview CSV Points\" to process rows.");
+  });
 
   map.on("click", (event) => {
     const lat = Number(event.latlng.lat.toFixed(8));
