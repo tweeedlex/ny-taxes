@@ -40,8 +40,8 @@ function RateRow({ label, value }: { label: string; value: number }) {
 function JurisdictionRow({ name, rate }: { name: string; rate: number }) {
   return (
     <div className="flex justify-between text-[11px]">
-      <span className="text-zinc-500 truncate max-w-[140px]">{name}</span>
-      <span className="font-mono text-zinc-400">{toPercent(rate)}</span>
+      <span className="text-muted-foreground truncate max-w-[140px]">{name}</span>
+      <span className="font-mono text-muted-foreground">{toPercent(rate)}</span>
     </div>
   )
 }
@@ -67,7 +67,7 @@ function JurisdictionsList({ jurisdictions }: { jurisdictions: Order['jurisdicti
 export function TaxBreakdownTooltip({ order }: { order: Order }) {
   return (
     <div className="space-y-3 min-w-[220px]">
-      <div className="font-semibold text-xs text-zinc-100">Tax Breakdown</div>
+      <div className="font-semibold text-xs text-foreground">Tax Breakdown</div>
 
       <div className="space-y-1.5">
         {RATE_ITEMS.map(({ key, label }) => (
@@ -78,7 +78,7 @@ export function TaxBreakdownTooltip({ order }: { order: Order }) {
       <Separator className="opacity-20" />
 
       <div className="flex justify-between text-xs">
-        <span className="font-semibold text-zinc-100">Composite</span>
+        <span className="font-semibold text-foreground">Composite</span>
         <span className="font-mono font-bold text-foreground">
           {toPercent(order.composite_tax_rate)}
         </span>

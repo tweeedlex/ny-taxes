@@ -27,16 +27,16 @@ interface OrdersTableProps {
 
 export function OrdersTable({ orders, loading = false, expandedId, onToggleExpand }: OrdersTableProps) {
   return (
-    <div className="rounded-xl overflow-hidden border border-zinc-800 bg-zinc-900">
+    <div className="rounded-xl overflow-hidden border border-border bg-background">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-zinc-800">
+          <tr className="border-b border-border">
             {COLUMNS.map(({ label, w }) => (
               <th
                 key={label}
-                className={`px-4 py-3 text-left text-[11px] font-semibold text-zinc-500 uppercase tracking-wider ${w}`}
+                className={`px-4 py-3 text-left text-[11px] font-semibold text-muted-foreground uppercase tracking-wider ${w}`}
               >
-                <button className="flex items-center gap-1 hover:text-zinc-300 transition-colors">
+                <button className="flex items-center gap-1 hover:text-foreground transition-colors">
                   {label}
                   {SORTABLE.has(label) && <ArrowUpDown className="w-3 h-3 opacity-40" />}
                 </button>
@@ -70,10 +70,10 @@ function LoadingRows() {
   return (
     <>
       {Array.from({ length: 5 }).map((_, i) => (
-        <tr key={i} className="border-b border-zinc-800/60">
+        <tr key={i} className="border-b border-border">
           {Array.from({ length: 10 }).map((_, j) => (
             <td key={j} className="px-4 py-3">
-              <Skeleton className="h-4 w-full bg-zinc-800" />
+              <Skeleton className="h-4 w-full bg-card" />
             </td>
           ))}
         </tr>
@@ -87,12 +87,12 @@ function EmptyState() {
     <tr>
       <td colSpan={10} className="py-16 text-center">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-12 h-12 rounded-xl bg-zinc-800 flex items-center justify-center">
+          <div className="w-12 h-12 rounded-xl bg-card flex items-center justify-center">
             <Package className="w-6 h-6 text-zinc-600" />
           </div>
           <div>
-            <div className="text-sm font-medium text-zinc-500">No orders found</div>
-            <div className="text-xs text-zinc-600 mt-1">Try adjusting your search or filters</div>
+            <div className="text-sm font-medium text-muted-foreground">No orders found</div>
+            <div className="text-xs text-muted-foreground mt-1">Try adjusting your search or filters</div>
           </div>
         </div>
       </td>

@@ -20,7 +20,7 @@ export function ExpandedOrderRow({ order, colSpan }: { order: Order; colSpan: nu
       transition={{ duration: 0.15 }}
     >
       <td colSpan={colSpan} className="px-4 pb-3 pt-0">
-        <div className="rounded-lg p-4 grid grid-cols-2 gap-6 border border-zinc-800 bg-zinc-900/50">
+        <div className="rounded-lg p-4 grid grid-cols-2 gap-6 border border-border bg-background">
           <JurisdictionsPanel order={order} />
           <RateBreakdownPanel order={order} />
         </div>
@@ -44,7 +44,7 @@ function JurisdictionsPanel({ order }: { order: Order }) {
                 <span className="text-xs text-zinc-400">{item.name}</span>
                 <Badge
                   variant="outline"
-                  className="text-[10px] px-1.5 py-0 h-4 capitalize border-zinc-700 text-zinc-500 bg-transparent"
+                  className="text-[10px] px-1.5 py-0 h-4 capitalize border-zinc-700 text-muted-foreground bg-transparent"
                 >
                   {tier}
                 </Badge>
@@ -72,12 +72,12 @@ function RateBreakdownPanel({ order }: { order: Order }) {
           return (
             <div key={label} className="space-y-1">
               <div className="flex justify-between text-[11px]">
-                <span className="text-zinc-500">{label}</span>
+                <span className="text-muted-foreground">{label}</span>
                 <span className="font-mono" style={{ color }}>
                   {(value * 100).toFixed(4)}%
                 </span>
               </div>
-              <div className="h-1.5 rounded-full bg-zinc-800 overflow-hidden">
+              <div className="h-1.5 rounded-full bg-card overflow-hidden">
                 <motion.div
                   className="h-full rounded-full"
                   style={{ background: color }}

@@ -104,7 +104,7 @@ export default function Layout() {
             className="flex items-center gap-3 px-3 py-2.5 rounded-lg"
             style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}
           >
-            <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 bg-zinc-700 text-zinc-200">
+            <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 bg-zinc-700 text-foreground">
               A
             </div>
             <div className="flex-1 min-w-0">

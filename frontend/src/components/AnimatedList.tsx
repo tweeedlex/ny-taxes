@@ -163,7 +163,7 @@ const AnimatedList: React.FC<AnimatedListProps> = ({
             onClick={() => handleItemClick(item, index)}
           >
             <div className={`p-4 bg-[#111] rounded-lg ${selectedIndex === index ? 'bg-[#222]' : ''} ${itemClassName}`}>
-              <p className="text-white m-0">{item}</p>
+              <p className="text-foreground m-0">{item}</p>
             </div>
           </AnimatedItem>
         ))}

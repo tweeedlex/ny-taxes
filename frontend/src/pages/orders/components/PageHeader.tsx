@@ -4,21 +4,21 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 
 export function PageHeader() {
   return (
-    <div className="border-b border-zinc-800">
+    <div className="border-b border-border">
       <div className="px-8 py-7 flex items-start justify-between">
         <div>
           <div className="flex items-center gap-2 mb-2">
-            <div className="w-5 h-5 rounded-md bg-zinc-800 flex items-center justify-center">
-              <Package className="w-3 h-3 text-zinc-400" />
+            <div className="w-5 h-5 rounded-md bg-secondary flex items-center justify-center">
+              <Package className="w-3 h-3 text-muted-foreground" />
             </div>
-            <span className="text-[11px] font-medium tracking-widest uppercase text-zinc-500">
+            <span className="text-[11px] font-medium tracking-widest uppercase text-muted-foreground">
               Orders
             </span>
           </div>
           <h1 className="text-3xl font-bold text-zinc-50 tracking-tight">
             Order Management
           </h1>
-          <p className="text-sm text-zinc-500 mt-1.5">
+          <p className="text-sm text-muted-foreground mt-1.5">
             Browse, filter and analyse all drone delivery orders with full tax breakdown.
           </p>
         </div>
@@ -29,7 +29,7 @@ export function PageHeader() {
               <Button
                 variant="outline"
                 size="sm"
-                className="h-8 gap-1.5 text-zinc-400 border-zinc-700 hover:border-zinc-600 hover:text-zinc-200 bg-transparent"
+                className="h-8 gap-1.5 text-zinc-400 border-zinc-700 hover:border-zinc-600 hover:text-foreground bg-transparent"
               >
                 <Download className="w-3.5 h-3.5" />
                 Export

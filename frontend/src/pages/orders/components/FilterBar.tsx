@@ -55,9 +55,9 @@ export function FilterBar({
         </Button>
 
         <div className="ml-auto flex items-center gap-2">
-          <span className="text-xs text-zinc-500">{rangeText}</span>
+          <span className="text-xs text-muted-foreground">{rangeText}</span>
           <Select value={String(pageSize)} onValueChange={(v) => onPageSizeChange(Number(v))}>
-            <SelectTrigger className="h-8 w-[70px] text-xs border-zinc-700 bg-zinc-900 text-zinc-300">
+            <SelectTrigger className="h-8 w-[70px] text-xs border-zinc-700 bg-background text-zinc-300">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -70,7 +70,7 @@ export function FilterBar({
           </Select>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-500 hover:text-zinc-200">
+              <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
                 <RefreshCw className="w-3.5 h-3.5" />
               </Button>
             </TooltipTrigger>
@@ -89,7 +89,7 @@ export function FilterBar({
 function SearchInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   return (
     <div className="relative flex-1 max-w-xs">
-      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-500" />
+      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
       <Input
         placeholder="Search by ID, code, author…"
         value={value}
@@ -99,7 +99,7 @@ function SearchInput({ value, onChange }: { value: string; onChange: (v: string)
       {value && (
         <button
           onClick={() => onChange('')}
-          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300"
+          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
         >
           <X className="w-3 h-3" />
         </button>
@@ -117,14 +117,14 @@ function ExpandedFilters() {
       transition={{ duration: 0.2 }}
       className="overflow-hidden"
     >
-      <div className="grid grid-cols-4 gap-3 p-4 rounded-xl border border-zinc-800 bg-zinc-900/50">
+      <div className="grid grid-cols-4 gap-3 p-4 rounded-xl border border-border bg-background">
         {FILTER_FIELDS.map(({ label, placeholder, type }) => (
           <div key={label} className="space-y-1">
-            <label className="text-[11px] text-zinc-500 font-medium">{label}</label>
+            <label className="text-[11px] text-muted-foreground font-medium">{label}</label>
             <Input
               type={type ?? 'text'}
               placeholder={placeholder}
-              className="h-8 text-xs bg-zinc-900 border-zinc-700 text-zinc-300 placeholder:text-zinc-600"
+              className="h-8 text-xs bg-background border-zinc-700 text-zinc-300 placeholder:text-zinc-600"
             />
           </div>
         ))}

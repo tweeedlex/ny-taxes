@@ -24,18 +24,18 @@ export function OrderTableRow({ order, index, isExpanded, onToggle }: OrderTable
         initial={{ opacity: 0, x: -8 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.25, delay: index * 0.04 }}
-        className="table-row-hover border-b border-zinc-800/60 cursor-pointer"
+        className="table-row-hover border-b border-border cursor-pointer"
         onClick={onToggle}
       >
         {/* ID */}
         <td className="px-4 py-3">
-          <span className="font-mono text-xs text-zinc-500">#{order.id}</span>
+          <span className="font-mono text-xs text-muted-foreground">#{order.id}</span>
         </td>
 
         {/* Timestamp */}
         <td className="px-4 py-3">
-          <div className="text-xs text-zinc-200">{formatDate(order.timestamp)}</div>
-          <div className="text-[10px] text-zinc-500 mt-0.5">{formatTime(order.timestamp)}</div>
+          <div className="text-xs text-foreground">{formatDate(order.timestamp)}</div>
+          <div className="text-[10px] text-muted-foreground mt-0.5">{formatTime(order.timestamp)}</div>
         </td>
 
         {/* Author */}
@@ -55,8 +55,8 @@ export function OrderTableRow({ order, index, isExpanded, onToggle }: OrderTable
         {/* Coordinates */}
         <td className="px-4 py-3">
           <div className="flex items-center gap-1">
-            <MapPin className="w-3 h-3 text-zinc-600 shrink-0" />
-            <span className="text-[11px] font-mono text-zinc-500">
+            <MapPin className="w-3 h-3 text-muted-foreground shrink-0" />
+            <span className="text-[11px] font-mono text-muted-foreground">
               {order.latitude.toFixed(4)}, {order.longitude.toFixed(4)}
             </span>
           </div>
@@ -66,7 +66,7 @@ export function OrderTableRow({ order, index, isExpanded, onToggle }: OrderTable
         <td className="px-4 py-3">
           <Badge
             variant="secondary"
-            className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-zinc-800 text-zinc-300 border border-zinc-700"
+            className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-card text-zinc-300 border border-zinc-700"
           >
             {order.reporting_code}
           </Badge>
@@ -74,7 +74,7 @@ export function OrderTableRow({ order, index, isExpanded, onToggle }: OrderTable
 
         {/* Subtotal */}
         <td className="px-4 py-3">
-          <span className="text-xs font-semibold text-zinc-100">
+          <span className="text-xs font-semibold text-foreground">
             {formatMoney(order.subtotal)}
           </span>
         </td>
@@ -127,7 +127,7 @@ export function OrderTableRow({ order, index, isExpanded, onToggle }: OrderTable
                 ))}
               </button>
             </TooltipTrigger>
-            <TooltipContent side="left" className="p-3 bg-zinc-900 border-zinc-800">
+            <TooltipContent side="left" className="p-3 bg-background border-border">
               <TaxBreakdownTooltip order={order} />
             </TooltipContent>
           </Tooltip>

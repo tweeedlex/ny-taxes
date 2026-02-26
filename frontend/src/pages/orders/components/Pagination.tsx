@@ -12,21 +12,21 @@ export function Pagination({ page, totalPages, onPageChange }: PaginationProps) 
 
   return (
     <div className="flex items-center justify-between mt-4">
-      <span className="text-xs text-zinc-500">
+      <span className="text-xs text-muted-foreground">
         Page {page + 1} of {totalPages}
       </span>
       <div className="flex items-center gap-1.5">
         <Button
           variant="outline"
           size="sm"
-          className="h-7 px-2.5 text-xs border-zinc-700 bg-transparent text-zinc-400 hover:text-zinc-200 disabled:opacity-30"
+          className="h-7 px-2.5 text-xs border-zinc-700 bg-transparent text-zinc-400 hover:text-foreground disabled:opacity-30"
           disabled={page === 0}
           onClick={() => onPageChange(page - 1)}
         >
           <ChevronDown className="w-3.5 h-3.5 rotate-90" />
           Prev
         </Button>
-
+        
         {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => (
           <Button
             key={i}
@@ -46,7 +46,7 @@ export function Pagination({ page, totalPages, onPageChange }: PaginationProps) 
         <Button
           variant="outline"
           size="sm"
-          className="h-7 px-2.5 text-xs border-zinc-700 bg-transparent text-zinc-400 hover:text-zinc-200 disabled:opacity-30"
+          className="h-7 px-2.5 text-xs border-zinc-700 bg-transparent text-zinc-400 hover:text-foreground disabled:opacity-30"
           disabled={page >= totalPages - 1}
           onClick={() => onPageChange(page + 1)}
         >
