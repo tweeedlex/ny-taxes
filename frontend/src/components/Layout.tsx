@@ -30,24 +30,15 @@ export default function Layout() {
         className="fixed left-0 top-0 h-full flex flex-col z-20 border-r border-border"
         style={{ width: 'var(--sidebar-width)', background: 'hsl(240 10% 4.5%)' }}
       >
-        {/* Sidebar top glow */}
-        <div
-          className="absolute top-0 left-0 right-0 h-32 pointer-events-none opacity-20"
-          style={{
-            background: 'radial-gradient(ellipse at 50% -20%, #6366f1 0%, transparent 70%)',
-          }}
-        />
+        {/* Subtle top border accent */}
+        <div className="absolute top-0 left-0 right-0 h-px bg-zinc-700/60" />
 
         {/* Logo */}
         <div className="relative px-4 py-5 flex items-center gap-3">
           <div
-            className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
-            style={{
-              background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
-              boxShadow: '0 0 20px rgba(99,102,241,0.4)',
-            }}
+            className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 bg-amber-400"
           >
-            <MapPin className="w-4 h-4 text-white" strokeWidth={2.5} />
+            <MapPin className="w-4 h-4 text-zinc-950" strokeWidth={2.5} />
           </div>
           <div>
             <div className="text-sm font-bold text-foreground leading-none tracking-tight">
@@ -83,8 +74,7 @@ export default function Layout() {
               <span className="flex-1">{label}</span>
               {badge && (
                 <span
-                  className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full"
-                  style={{ background: 'rgba(99,102,241,0.15)', color: '#a5b4fc' }}
+                  className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-zinc-700/80 text-zinc-400"
                 >
                   {badge}
                 </span>
@@ -117,14 +107,7 @@ export default function Layout() {
             className="flex items-center gap-3 px-3 py-2.5 rounded-lg"
             style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}
           >
-            <div
-              className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
-              style={{
-                background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-                color: 'white',
-                boxShadow: '0 0 12px rgba(99,102,241,0.3)',
-              }}
-            >
+            <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 bg-zinc-700 text-zinc-200">
               A
             </div>
             <div className="flex-1 min-w-0">

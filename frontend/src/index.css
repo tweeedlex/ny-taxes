@@ -8,31 +8,23 @@
     --foreground: 0 0% 95%;
     --card: 240 8% 7%;
     --card-foreground: 0 0% 95%;
-    --popover: 240 8% 7%;
+    --popover: 240 8% 9%;
     --popover-foreground: 0 0% 95%;
-    --primary: 252 100% 67%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 43 96% 56%;           /* amber-400 */
+    --primary-foreground: 240 10% 4%;
     --secondary: 240 6% 12%;
     --secondary-foreground: 0 0% 80%;
     --muted: 240 6% 12%;
     --muted-foreground: 0 0% 50%;
-    --accent: 252 100% 67%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 43 96% 56%;
+    --accent-foreground: 240 10% 4%;
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 98%;
     --border: 240 6% 14%;
     --input: 240 6% 12%;
-    --ring: 252 100% 67%;
+    --ring: 43 96% 56%;
     --radius: 0.75rem;
     --sidebar-width: 240px;
-
-    /* Custom colors */
-    --indigo: 252 100% 67%;
-    --violet: 270 95% 65%;
-    --emerald: 160 84% 39%;
-    --amber: 43 96% 56%;
-    --rose: 355 78% 60%;
-    --cyan: 197 71% 52%;
   }
 }
 
@@ -68,23 +60,15 @@
   border: 1px solid rgba(255, 255, 255, 0.07);
 }
 
-/* Glow effects */
-.glow-indigo {
-  box-shadow: 0 0 20px rgba(99, 102, 241, 0.15), 0 0 40px rgba(99, 102, 241, 0.05);
-}
-.glow-emerald {
-  box-shadow: 0 0 20px rgba(16, 185, 129, 0.15);
-}
-
 /* Table row hover */
 .table-row-hover {
   transition: background 0.15s ease;
 }
 .table-row-hover:hover {
-  background: rgba(99, 102, 241, 0.04);
+  background: rgba(251, 191, 36, 0.04);
 }
 .table-row-hover:hover td:first-child {
-  border-left: 2px solid hsl(252, 100%, 67%);
+  border-left: 2px solid rgba(251, 191, 36, 0.4);
 }
 
 /* Sidebar nav item */
@@ -95,39 +79,9 @@
   @apply text-foreground bg-secondary;
 }
 .nav-item.active {
-  @apply text-foreground bg-secondary;
-  background: rgba(99, 102, 241, 0.12);
-  color: hsl(252, 100%, 78%);
-}
-
-/* Animated gradient border */
-@keyframes border-gradient {
-  0%, 100% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-}
-
-.gradient-border {
-  position: relative;
-}
-.gradient-border::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  padding: 1px;
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.5), rgba(139, 92, 246, 0.2), rgba(99, 102, 241, 0.5));
-  background-size: 200% 200%;
-  animation: border-gradient 4s ease infinite;
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  pointer-events: none;
-}
-
-/* Stat card shine */
-@keyframes shine {
-  from { transform: translateX(-100%) rotate(25deg); }
-  to { transform: translateX(300%) rotate(25deg); }
+  @apply text-foreground;
+  background: rgba(251, 191, 36, 0.1);
+  color: hsl(43, 96%, 65%);
 }
 
 /* Pulse dot */
