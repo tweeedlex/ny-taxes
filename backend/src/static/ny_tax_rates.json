@@ -81,13 +81,13 @@
         "name": "New York State"
       }
     ],
-    "county_rate": [],
-    "city_rate": [
+    "county_rate": [
       {
         "rate": 0.04,
-        "name": "Olean"
+        "name": "Cattaraugus"
       }
     ],
+    "city_rate": [],
     "special_rates": []
   },
   "0431": {
@@ -97,13 +97,13 @@
         "name": "New York State"
       }
     ],
-    "county_rate": [],
-    "city_rate": [
+    "county_rate": [
       {
         "rate": 0.04,
-        "name": "Salamanca"
+        "name": "Cattaraugus"
       }
     ],
+    "city_rate": [],
     "special_rates": []
   },
   "0511": {
@@ -129,13 +129,13 @@
         "name": "New York State"
       }
     ],
-    "county_rate": [],
-    "city_rate": [
+    "county_rate": [
       {
         "rate": 0.04,
-        "name": "Auburn"
+        "name": "Cayuga"
       }
     ],
+    "city_rate": [],
     "special_rates": []
   },
   "0651": {
@@ -193,13 +193,13 @@
         "name": "New York State"
       }
     ],
-    "county_rate": [],
-    "city_rate": [
+    "county_rate": [
       {
         "rate": 0.04,
-        "name": "Norwich"
+        "name": "Chenango"
       }
     ],
+    "city_rate": [],
     "special_rates": []
   },
   "0921": {
@@ -358,13 +358,13 @@
         "name": "New York State"
       }
     ],
-    "county_rate": [],
-    "city_rate": [
+    "county_rate": [
       {
         "rate": 0.04,
-        "name": "Gloversville"
+        "name": "Fulton"
       }
     ],
+    "city_rate": [],
     "special_rates": []
   },
   "1751": {
@@ -374,13 +374,13 @@
         "name": "New York State"
       }
     ],
-    "county_rate": [],
-    "city_rate": [
+    "county_rate": [
       {
         "rate": 0.04,
-        "name": "Johnstown"
+        "name": "Fulton"
       }
     ],
+    "city_rate": [],
     "special_rates": []
   },
   "1811": {
@@ -518,13 +518,13 @@
         "name": "New York State"
       }
     ],
-    "county_rate": [],
-    "city_rate": [
+    "county_rate": [
       {
         "rate": 0.04,
-        "name": "Oneida"
+        "name": "Madison"
       }
     ],
+    "city_rate": [],
     "special_rates": []
   },
   "2611": {
@@ -640,13 +640,13 @@
         "name": "New York State"
       }
     ],
-    "county_rate": [],
-    "city_rate": [
+    "county_rate": [
       {
         "rate": 0.0475,
-        "name": "Rome"
+        "name": "Oneida"
       }
     ],
+    "city_rate": [],
     "special_rates": []
   },
   "3018": {
@@ -656,13 +656,13 @@
         "name": "New York State"
       }
     ],
-    "county_rate": [],
-    "city_rate": [
+    "county_rate": [
       {
         "rate": 0.0475,
-        "name": "Utica"
+        "name": "Oneida"
       }
     ],
+    "city_rate": [],
     "special_rates": []
   },
   "3121": {
@@ -757,13 +757,13 @@
         "name": "New York State"
       }
     ],
-    "county_rate": [],
-    "city_rate": [
+    "county_rate": [
       {
         "rate": 0.04,
         "name": "Oswego"
       }
     ],
+    "city_rate": [],
     "special_rates": []
   },
   "3621": {
@@ -863,13 +863,13 @@
         "name": "New York State"
       }
     ],
-    "county_rate": [],
-    "city_rate": [
+    "county_rate": [
       {
         "rate": 0.04,
-        "name": "Ogdensburg"
+        "name": "St. Lawrence"
       }
     ],
+    "city_rate": [],
     "special_rates": []
   },
   "4111": {
@@ -895,13 +895,13 @@
         "name": "New York State"
       }
     ],
-    "county_rate": [],
-    "city_rate": [
+    "county_rate": [
       {
         "rate": 0.03,
-        "name": "Saratoga Springs"
+        "name": "Saratoga"
       }
     ],
+    "city_rate": [],
     "special_rates": []
   },
   "4241": {
@@ -1055,13 +1055,13 @@
         "name": "New York State"
       }
     ],
-    "county_rate": [],
-    "city_rate": [
+    "county_rate": [
       {
         "rate": 0.04,
-        "name": "Ithaca"
+        "name": "Tompkins"
       }
     ],
+    "city_rate": [],
     "special_rates": []
   },
   "5111": {
@@ -1103,13 +1103,13 @@
         "name": "New York State"
       }
     ],
-    "county_rate": [],
-    "city_rate": [
+    "county_rate": [
       {
         "rate": 0.03,
-        "name": "Glens Falls"
+        "name": "Warren"
       }
     ],
+    "city_rate": [],
     "special_rates": []
   },
   "5311": {
@@ -1172,13 +1172,13 @@
         "name": "New York State"
       }
     ],
-    "county_rate": [],
-    "city_rate": [
+    "county_rate": [
       {
         "rate": 0.04,
-        "name": "Mount Vernon"
+        "name": "Westchester"
       }
     ],
+    "city_rate": [],
     "special_rates": [
       {
         "rate": 0.00375,
@@ -1193,13 +1193,13 @@
         "name": "New York State"
       }
     ],
-    "county_rate": [],
-    "city_rate": [
+    "county_rate": [
       {
         "rate": 0.04,
-        "name": "New Rochelle"
+        "name": "Westchester"
       }
     ],
+    "city_rate": [],
     "special_rates": [
       {
         "rate": 0.00375,
@@ -1214,14 +1214,14 @@
         "name": "New York State"
       }
     ],
-    "county_rate": [],
-    "city_rate": [
+    "county_rate": [
       {
         "rate": 0.04,
-        "name": "White Plains"
+        "name": "Westchester"
       }
     ],
-    "special_rates": [
+    "city_rate": [],
+      "special_rates": [
       {
         "rate": 0.00375,
         "name": "MCTD"
@@ -1235,10 +1235,15 @@
         "name": "New York State"
       }
     ],
-    "county_rate": [],
+    "county_rate": [
+      {
+        "rate": 0.04,
+        "name": "Westchester"
+      }
+    ],
     "city_rate": [
       {
-        "rate": 0.045,
+        "rate": 0.005,
         "name": "Yonkers"
       }
     ],
