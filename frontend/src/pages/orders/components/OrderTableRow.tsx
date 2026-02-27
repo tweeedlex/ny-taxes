@@ -2,17 +2,11 @@ import React from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { MapPin, Percent } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { TaxBreakdownTooltip } from "./TaxBreakdownTooltip";
 import { ExpandedOrderRow } from "./ExpandedOrderRow";
 import { formatMoney, formatDate, formatTime } from "../utils/formatters";
 import type { Order } from "@/types";
 
-const COLUMN_COUNT = 10;
+const COLUMN_COUNT = 9;
 
 interface OrderTableRowProps {
   order: Order;
@@ -54,7 +48,7 @@ export function OrderTableRow({
         </td>
 
         {/* Author */}
-        <td className="px-4 py-3">
+        <td className="px-4 py-3 hidden sm:table-cell">
           {order.author_login ? (
             <div className="flex items-center gap-2">
               <div
@@ -103,7 +97,7 @@ export function OrderTableRow({
         </td>
 
         {/* Tax Amount */}
-        <td className="px-4 py-3">
+        <td className="px-4 py-3 hidden md:table-cell">
           <span className="text-xs font-semibold text-muted-foreground">
             {formatMoney(order.tax_amount)}
           </span>
@@ -116,41 +110,6 @@ export function OrderTableRow({
           </span>
         </td>
 
-        {/* Breakdown */}
-        <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                className="flex items-center gap-0.5 text-muted-foreground/40 hover:text-muted-foreground transition-colors"
-                onClick={(e) => e.stopPropagation()}
-              >
-                {[
-                  order.breakdown.state_rate,
-                  order.breakdown.county_rate,
-                  order.breakdown.city_rate,
-                  order.breakdown.special_rates,
-                ].map((rate, i) => (
-                  <div
-                    key={i}
-                    className="w-3.5 h-3.5 rounded-sm"
-                    style={{
-                      background:
-                        rate > 0
-                          ? `rgba(161,161,170,${0.2 + i * 0.2})`
-                          : "rgba(255,255,255,0.04)",
-                    }}
-                  />
-                ))}
-              </button>
-            </TooltipTrigger>
-            <TooltipContent
-              side="left"
-              className="p-3 bg-background border-border"
-            >
-              <TaxBreakdownTooltip order={order} />
-            </TooltipContent>
-          </Tooltip>
-        </td>
       </motion.tr>
 
       <AnimatePresence>

@@ -28,6 +28,20 @@ The following scaffolding is **already in place** — do not recreate it:
 
 ---
 
+## API Note
+The backend API is already implemented and origin URLs are accesible via `VITE_API_URL` and `VITE_WS_URL`. The API client in `src/lib/api.ts` has basic wrappers for making requests with cookie auth, but you will need to add typed endpoint functions for each route (e.g. `login`, `fetchOrders`, etc.) that call these wrappers with the correct method, URL, and request body.
+If something is unclear, refer to the OpenAPI schema in `misc/openapi.json` for request/response details. Also you can observe the backend to understand the expected data shapes and error handling.
+The backend is available via VITE_API_URL, the data with all tax rates is available via {VITE_API_URL}/static/ny_tax_rates.json
+
+# Notes from the backend developer:
+треба написать
+шо при предполагаєм шо у нас в кіті нема підакцизних товарів
+не забуть для дат додать валідацію
+не раніше 1 березня 2025
+і коли загружаєш файл
+в модалці
+писать шо помилковими вважаються ті коордлинати, в яких таймстамп менше 1 березня 2025 або вони знаходяться не в НЙШ
+
 ## Types to Define (`src/types/index.ts`)
 
 Replace the stub with types derived from the OpenAPI schema:
@@ -397,6 +411,11 @@ Playwright tests live in `frontend/` (look for `*.spec.ts` files). The dev serve
 React Query DevTools are included in development builds — open the floating button in the bottom-left corner to inspect cache state.
 
 ---
+
+## UI language and design
+- All the UI text should be in English.
+- Follow the existing design patterns in the app, using shadcn/ui components and Tailwind
+- Use the colors from the tailwind config (`text-foreground`, `bg-primary`, etc.) for consistency. Avoid introducing new colors if possible
 
 ## Implementation Order (suggested)
 

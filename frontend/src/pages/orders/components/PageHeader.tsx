@@ -5,7 +5,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 export function PageHeader() {
   return (
     <div className="border-b border-border">
-      <div className="px-8 py-7 flex items-start justify-between">
+      <div className="px-4 sm:px-8 py-4 sm:py-7 flex flex-col xs:flex-row xs:items-start gap-3 xs:gap-0 justify-between">
         <div>
           <div className="flex items-center gap-2 mb-2">
             <div className="w-5 h-5 rounded-md bg-secondary flex items-center justify-center">

@@ -3,18 +3,17 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { OrderTableRow } from './OrderTableRow'
 import type { Order } from '@/types'
 
-const COLUMNS = [
+const COLUMNS: { label: string; w: string; hidden?: string }[] = [
   { label: 'ID', w: 'w-16' },
   { label: 'Timestamp', w: 'w-36' },
-  { label: 'Author', w: 'w-28' },
-  { label: 'Coordinates', w: 'w-36' },
+  { label: 'Author', w: 'w-28', hidden: 'hidden sm:table-cell' },
+  { label: 'Coordinates', w: 'w-36', hidden: 'hidden sm:table-cell' },
   { label: 'Code', w: 'w-36' },
   { label: 'Subtotal', w: 'w-24' },
   { label: 'Tax Rate', w: 'w-24' },
-  { label: 'Tax Amount', w: 'w-24' },
+  { label: 'Tax Amount', w: 'w-24', hidden: 'hidden md:table-cell' },
   { label: 'Total', w: 'w-24' },
-  { label: 'Breakdown', w: 'w-20' },
-] as const
+]
 
 const SORTABLE = new Set(['Subtotal', 'Tax Rate', 'Tax Amount', 'Total'])
 
@@ -27,14 +26,14 @@ interface OrdersTableProps {
 
 export function OrdersTable({ orders, loading = false, expandedId, onToggleExpand }: OrdersTableProps) {
   return (
-    <div className="rounded-xl overflow-hidden border border-border bg-background">
-      <table className="w-full text-sm">
+    <div className="rounded-xl overflow-hidden border border-border bg-background overflow-x-auto">
+      <table className="w-full text-sm min-w-[600px]">
         <thead>
           <tr className="border-b border-border">
-            {COLUMNS.map(({ label, w }) => (
+            {COLUMNS.map(({ label, w, hidden }) => (
               <th
                 key={label}
-                className={`px-4 py-3 text-left text-[11px] font-semibold text-muted-foreground uppercase tracking-wider ${w}`}
+                className={`px-4 py-3 text-left text-[11px] font-semibold text-muted-foreground uppercase tracking-wider ${w} ${hidden ?? ''}`}
               >
                 <button className="flex items-center gap-1 hover:text-foreground transition-colors">
                   {label}
@@ -71,7 +70,7 @@ function LoadingRows() {
     <>
       {Array.from({ length: 5 }).map((_, i) => (
         <tr key={i} className="border-b border-border">
-          {Array.from({ length: 10 }).map((_, j) => (
+          {Array.from({ length: 9 }).map((_, j) => (
             <td key={j} className="px-4 py-3">
               <Skeleton className="h-4 w-full bg-card" />
             </td>
@@ -85,7 +84,7 @@ function LoadingRows() {
 function EmptyState() {
   return (
     <tr>
-      <td colSpan={10} className="py-16 text-center">
+      <td colSpan={9} className="py-16 text-center">
         <div className="flex flex-col items-center gap-3">
           <div className="w-12 h-12 rounded-xl bg-card flex items-center justify-center">
             <Package className="w-6 h-6 text-zinc-600" />

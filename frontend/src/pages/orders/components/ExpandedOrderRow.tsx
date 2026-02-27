@@ -20,7 +20,7 @@ export function ExpandedOrderRow({ order, colSpan }: { order: Order; colSpan: nu
       transition={{ duration: 0.15 }}
     >
       <td colSpan={colSpan} className="px-4 pb-3 pt-0">
-        <div className="rounded-lg p-4 grid grid-cols-2 gap-6 border border-border bg-background">
+        <div className="rounded-lg p-3 sm:p-4 grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 border border-border bg-background">
           <JurisdictionsPanel order={order} />
           <RateBreakdownPanel order={order} />
         </div>

@@ -35,8 +35,8 @@ export function FilterBar({
       : `${page * pageSize + 1}–${Math.min((page + 1) * pageSize, total)} of ${total}`
 
   return (
-    <div className="px-8 pb-4 space-y-3">
-      <div className="flex items-center gap-3">
+    <div className="px-4 sm:px-8 pb-4 space-y-3">
+      <div className="flex flex-wrap items-center gap-2 sm:gap-3">
         <SearchInput value={search} onChange={onSearchChange} />
 
         <Button
@@ -54,7 +54,7 @@ export function FilterBar({
           {showFilters && <span className="w-1.5 h-1.5 rounded-full bg-foreground ml-0.5" />}
         </Button>
 
-        <div className="ml-auto flex items-center gap-2">
+        <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
           <span className="text-xs text-muted-foreground">{rangeText}</span>
           <Select value={String(pageSize)} onValueChange={(v) => onPageSizeChange(Number(v))}>
             <SelectTrigger className="h-8 w-[100px] text-xs border-border bg-card text-foreground dark:border-zinc-700 dark:bg-background dark:text-zinc-300">
@@ -88,7 +88,7 @@ export function FilterBar({
 
 function SearchInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   return (
-    <div className="relative flex-1 max-w-xs">
+    <div className="relative flex-1 min-w-[140px] max-w-xs">
       <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
       <Input
         placeholder="Search by ID, code, author…"
@@ -117,7 +117,7 @@ function ExpandedFilters() {
       transition={{ duration: 0.2 }}
       className="overflow-hidden"
     >
-      <div className="grid grid-cols-4 gap-3 p-4 rounded-xl border border-border bg-background">
+      <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-4 gap-3 p-4 rounded-xl border border-border bg-background">
         {FILTER_FIELDS.map(({ label, placeholder, type }) => (
           <div key={label} className="space-y-1">
             <label className="text-[11px] text-muted-foreground font-medium">{label}</label>

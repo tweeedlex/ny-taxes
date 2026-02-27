@@ -31,7 +31,7 @@ export default function OrdersPage() {
           showFilters={showFilters}
           onToggleFilters={() => setShowFilters((s) => !s)}
         />
-        <div className="px-8 pb-8 flex-1">
+        <div className="px-4 sm:px-8 pb-8 flex-1">
           <OrdersTable
             orders={paged}
             expandedId={expandedId}
