@@ -79,3 +79,42 @@ Frontend development guidelines:
 - `backend/docker-compose.yml` — API + PostgreSQL + Redis + MinIO + MinIO-init (bucket creation)
 - `frontend/docker-compose.yml` — nginx on port 3000 serving the built frontend
 - `frontend/nginx.conf` — SPA routing with `try_files` fallback to `index.html`
+
+## Git Flow
+
+### Branches
+- `main` — production-ready code only; never commit directly
+- `develop` — integration branch; all features merge here first
+- `feature/<scope>/<short-description>` — new features (branch from `develop`)
+- `fix/<scope>/<short-description>` — bug fixes (branch from `develop`)
+- `hotfix/<short-description>` — urgent production fixes (branch from `main`, merge into both `main` and `develop`)
+- `release/<version>` — release preparation (branch from `develop`, merge into `main` and back into `develop`)
+
+### Workflow
+1. Branch from `develop` for all non-urgent work: `git checkout -b feature/orders/csv-export`
+2. Make small, focused commits with conventional commit messages (see below)
+3. Open a PR targeting `develop`; get at least one review before merging
+4. Use squash-merge for feature branches to keep `develop` history clean
+5. Hotfixes branch from `main`, are merged into `main` via PR, then cherry-picked or merged into `develop`
+
+### Commit Message Format
+Follow [Conventional Commits](https://www.conventionalcommits.org/):
+```
+<type>(<scope>): <short summary>
+
+[optional body]
+```
+**Types**: `feat`, `fix`, `refactor`, `style`, `test`, `docs`, `chore`, `perf`
+**Scope**: module or area (e.g., `orders`, `auth`, `users`, `frontend`, `backend`, `docker`)
+
+Examples:
+```
+feat(orders): add CSV export endpoint
+fix(auth): clear session cookie on logout
+refactor(frontend): split OrdersPage into SOLID components
+```
+
+### Rules
+- Never force-push to `main` or `develop`
+- Delete feature/fix branches after merge
+- Tag releases on `main`: `v<major>.<minor>.<patch>`
