@@ -7,14 +7,7 @@ import { Pagination } from './components/Pagination'
 import { useOrdersFilter } from './hooks/useOrdersFilter'
 
 export default function OrdersPage() {
-  const {
-    search, setSearch,
-    page, setPage,
-    pageSize, setPageSize,
-    showFilters, setShowFilters,
-    expandedId, toggleExpanded,
-    paged, total, totalPages,
-  } = useOrdersFilter()
+  const filter = useOrdersFilter()
 
   return (
     <TooltipProvider delayDuration={200}>
@@ -22,25 +15,33 @@ export default function OrdersPage() {
         <PageHeader />
         <StatsRow />
         <FilterBar
-          search={search}
-          onSearchChange={setSearch}
-          page={page}
-          pageSize={pageSize}
-          onPageSizeChange={setPageSize}
-          total={total}
-          showFilters={showFilters}
-          onToggleFilters={() => setShowFilters((s) => !s)}
+          search={filter.search}
+          onSearchChange={filter.setSearch}
+          page={filter.page}
+          pageSize={filter.pageSize}
+          onPageSizeChange={filter.setPageSize}
+          total={filter.total}
+          showFilters={filter.showFilters}
+          onToggleFilters={() => filter.setShowFilters((s) => !s)}
+          onRefresh={filter.refetch}
+          reportingCode={filter.reportingCode}
+          timestampFrom={filter.timestampFrom}
+          timestampTo={filter.timestampTo}
+          subtotalMin={filter.subtotalMin}
+          subtotalMax={filter.subtotalMax}
+          onFilterChange={filter.setFilter}
         />
         <div className="px-4 sm:px-8 pb-8 flex-1">
           <OrdersTable
-            orders={paged}
-            expandedId={expandedId}
-            onToggleExpand={toggleExpanded}
+            orders={filter.orders}
+            expandedId={filter.expandedId}
+            onToggleExpand={filter.toggleExpanded}
+            loading={filter.isLoading}
           />
           <Pagination
-            page={page}
-            totalPages={totalPages}
-            onPageChange={setPage}
+            page={filter.page}
+            totalPages={filter.totalPages}
+            onPageChange={filter.setPage}
           />
         </div>
       </div>

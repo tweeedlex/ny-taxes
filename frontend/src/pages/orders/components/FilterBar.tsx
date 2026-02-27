@@ -7,13 +7,6 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 
 const PAGE_SIZES = [10, 25, 50]
 
-const FILTER_FIELDS = [
-  { label: 'Reporting Code', placeholder: 'e.g. NY-NYC-MANH' },
-  { label: 'Date From', placeholder: 'YYYY-MM-DD', type: 'date' as const },
-  { label: 'Date To', placeholder: 'YYYY-MM-DD', type: 'date' as const },
-  { label: 'Min Subtotal', placeholder: '0.00' },
-]
-
 interface FilterBarProps {
   search: string
   onSearchChange: (v: string) => void
@@ -23,16 +16,24 @@ interface FilterBarProps {
   total: number
   showFilters: boolean
   onToggleFilters: () => void
+  onRefresh: () => void
+  reportingCode: string
+  timestampFrom: string
+  timestampTo: string
+  subtotalMin: string
+  subtotalMax: string
+  onFilterChange: (key: string, value: string) => void
 }
 
 export function FilterBar({
   search, onSearchChange, page, pageSize, onPageSizeChange,
-  total, showFilters, onToggleFilters,
+  total, showFilters, onToggleFilters, onRefresh,
+  reportingCode, timestampFrom, timestampTo, subtotalMin, subtotalMax, onFilterChange,
 }: FilterBarProps) {
   const rangeText =
     total === 0
       ? 'No results'
-      : `${page * pageSize + 1}–${Math.min((page + 1) * pageSize, total)} of ${total}`
+      : `${page * pageSize + 1}\u2013${Math.min((page + 1) * pageSize, total)} of ${total}`
 
   return (
     <div className="px-4 sm:px-8 pb-4 space-y-3">
@@ -70,7 +71,12 @@ export function FilterBar({
           </Select>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                onClick={() => onRefresh()}
+              >
                 <RefreshCw className="w-3.5 h-3.5" />
               </Button>
             </TooltipTrigger>
@@ -80,7 +86,16 @@ export function FilterBar({
       </div>
 
       <AnimatePresence>
-        {showFilters && <ExpandedFilters />}
+        {showFilters && (
+          <ExpandedFilters
+            reportingCode={reportingCode}
+            timestampFrom={timestampFrom}
+            timestampTo={timestampTo}
+            subtotalMin={subtotalMin}
+            subtotalMax={subtotalMax}
+            onFilterChange={onFilterChange}
+          />
+        )}
       </AnimatePresence>
     </div>
   )
@@ -91,7 +106,7 @@ function SearchInput({ value, onChange }: { value: string; onChange: (v: string)
     <div className="relative flex-1 min-w-[140px] max-w-xs">
       <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
       <Input
-        placeholder="Search by ID, code, author…"
+        placeholder="Search by reporting code..."
         value={value}
         onChange={(e) => onChange(e.target.value)}
         className="pl-9 h-8 text-sm bg-card border-border focus-visible:ring-ring/40 text-foreground placeholder:text-muted-foreground"
@@ -108,7 +123,26 @@ function SearchInput({ value, onChange }: { value: string; onChange: (v: string)
   )
 }
 
-function ExpandedFilters() {
+interface ExpandedFiltersProps {
+  reportingCode: string
+  timestampFrom: string
+  timestampTo: string
+  subtotalMin: string
+  subtotalMax: string
+  onFilterChange: (key: string, value: string) => void
+}
+
+function ExpandedFilters({
+  reportingCode, timestampFrom, timestampTo, subtotalMin, subtotalMax, onFilterChange,
+}: ExpandedFiltersProps) {
+  const fields = [
+    { label: 'Reporting Code', key: 'reporting_code', value: reportingCode, placeholder: 'e.g. NY-NYC-MANH' },
+    { label: 'Date From', key: 'timestamp_from', value: timestampFrom, placeholder: 'YYYY-MM-DD', type: 'date' as const },
+    { label: 'Date To', key: 'timestamp_to', value: timestampTo, placeholder: 'YYYY-MM-DD', type: 'date' as const },
+    { label: 'Min Subtotal', key: 'subtotal_min', value: subtotalMin, placeholder: '0.00' },
+    { label: 'Max Subtotal', key: 'subtotal_max', value: subtotalMax, placeholder: '999.99' },
+  ]
+
   return (
     <motion.div
       initial={{ opacity: 0, height: 0 }}
@@ -117,13 +151,15 @@ function ExpandedFilters() {
       transition={{ duration: 0.2 }}
       className="overflow-hidden"
     >
-      <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-4 gap-3 p-4 rounded-xl border border-border bg-background">
-        {FILTER_FIELDS.map(({ label, placeholder, type }) => (
-          <div key={label} className="space-y-1">
+      <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-5 gap-3 p-4 rounded-xl border border-border bg-background">
+        {fields.map(({ label, key, value, placeholder, type }) => (
+          <div key={key} className="space-y-1">
             <label className="text-[11px] text-muted-foreground font-medium">{label}</label>
             <Input
               type={type ?? 'text'}
               placeholder={placeholder}
+              value={value}
+              onChange={(e) => onFilterChange(key, e.target.value)}
               className="h-8 text-xs bg-card border-border text-foreground placeholder:text-muted-foreground
              dark:bg-background dark:border-zinc-700 dark:text-zinc-300 dark:placeholder:text-zinc-600"
             />
