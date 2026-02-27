@@ -5,7 +5,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 export function PageHeader() {
   return (
     <div className="border-b border-border">
-      <div className="px-8 py-7 flex items-start justify-between">
+      <div className="px-4 md:px-8 py-7 flex items-start  gap-x-[10px] justify-between">
         <div>
           <div className="flex items-center gap-2 mb-2">
             <div className="w-5 h-5 rounded-md bg-secondary flex items-center justify-center">
@@ -15,12 +15,12 @@ export function PageHeader() {
               Orders
             </span>
           </div>
-          <h1 className="text-3xl font-bold text-foreground tracking-tight">
+          <h1 className="text-2xl md:text-3xl font-bold text-foreground tracking-tight">
             Order Management
           </h1>
         </div>
 
-        <div className="flex items-center gap-2 mt-1">
+        <div className="flex flex-col md:flex-row items-end md:items-center gap-2 mt-1">
           <Tooltip>
             <TooltipTrigger asChild>
               <Button

@@ -18,7 +18,7 @@ export default function OrdersPage() {
 
   return (
     <TooltipProvider delayDuration={200}>
-      <div className="min-h-screen flex flex-col">
+      <div className="min-h-screen flex flex-col overflow-x-hidden w-full">
         <PageHeader />
         <StatsRow />
         <FilterBar
@@ -31,7 +31,7 @@ export default function OrdersPage() {
           showFilters={showFilters}
           onToggleFilters={() => setShowFilters((s) => !s)}
         />
-        <div className="px-8 pb-8 flex-1">
+        {/* <div className="px-4 lg:px-8 pb-8 flex-1 min-w-0 w-full">
           <OrdersTable
             orders={paged}
             expandedId={expandedId}
@@ -42,7 +42,7 @@ export default function OrdersPage() {
             totalPages={totalPages}
             onPageChange={setPage}
           />
-        </div>
+        </div> */}
       </div>
     </TooltipProvider>
   )

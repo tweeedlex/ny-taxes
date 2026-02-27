@@ -4,7 +4,7 @@ import { MOCK_STATS } from '@/lib/mock-data'
 
 export function StatsRow() {
   return (
-    <div className="px-8 py-6 grid grid-cols-4 gap-4">
+    <div className="px-4 lg:px-8 py-6 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
       <StatCard
         label="Total Orders"
         value={MOCK_STATS.total_orders}
