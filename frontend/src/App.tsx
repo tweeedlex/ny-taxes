@@ -1,20 +1,20 @@
-import { BrowserRouter, Route, Routes } from 'react-router-dom'
-import { Button } from '@/components/ui/button'
-
-function HomePage() {
-  return (
-    <div className="flex min-h-screen flex-col items-center justify-center gap-4">
-      <h1 className="text-4xl font-bold">NY Taxes</h1>
-      <Button>Get started</Button>
-    </div>
-  )
-}
+import { BrowserRouter, Route, Routes, Navigate } from 'react-router-dom'
+import Layout from '@/components/Layout'
+import OrdersPage from '@/pages/orders/OrdersPage'
+import UsersPage from './pages/users/UsersPage'
 
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<HomePage />} />
+        <Route path="/" element={<Navigate to="/orders" replace />} />
+        <Route element={<Layout />}>
+          <Route path="/orders" element={<OrdersPage />} />
+          <Route path='/users' element = {<UsersPage />} />
+          <Route path="/orders/import" element={<div className="p-8 text-muted-foreground">Import page — coming soon</div>} />
+          <Route path="/stats" element={<div className="p-8 text-muted-foreground">Stats page — coming soon</div>} />
+        </Route>
+        <Route path="/login" element={<div className="p-8">Login</div>} />
       </Routes>
     </BrowserRouter>
   )

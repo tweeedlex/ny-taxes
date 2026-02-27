@@ -3,6 +3,13 @@
     "playwright": {
       "command": "cmd /c npx",
       "args": ["@playwright/mcp"]
+    },
+    "shadcn": {
+      "command": "cmd /c npx",
+      "args": [
+        "shadcn@latest",
+        "mcp"
+      ]
     }
   }
 }

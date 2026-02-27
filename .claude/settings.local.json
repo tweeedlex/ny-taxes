@@ -2,7 +2,27 @@
   "permissions": {
     "allow": [
       "Bash(cd /d/programming/pet/current/ny-taxes && npm create vite@latest frontend -- --template react-ts 2>&1)",
-      "Bash(cd /d/programming/pet/current/ny-taxes/frontend && npm install 2>&1)"
+      "Bash(cd /d/programming/pet/current/ny-taxes/frontend && npm install 2>&1)",
+      "Bash(dir D:\\\\programming\\\\pet\\\\current\\\\ny-taxes\\\\frontend\\\\src:*)",
+      "mcp__shadcn__get_project_registries",
+      "mcp__shadcn__list_items_in_registries",
+      "mcp__shadcn__search_items_in_registries",
+      "WebFetch(domain:reactbits.dev)",
+      "mcp__shadcn__get_add_command_for_items",
+      "Bash(npx shadcn@latest:*)",
+      "mcp__shadcn__view_items_in_registries",
+      "Bash(curl:*)",
+      "WebSearch",
+      "Bash(npx tsc:*)",
+      "mcp__playwright__browser_navigate",
+      "mcp__playwright__browser_take_screenshot",
+      "Bash(node:*)",
+      "mcp__playwright__browser_resize",
+      "mcp__playwright__browser_click",
+      "mcp__playwright__browser_hover",
+      "mcp__playwright__browser_wait_for",
+      "mcp__playwright__browser_evaluate",
+      "mcp__playwright__browser_run_code"
     ]
   },
   "hooks": {
