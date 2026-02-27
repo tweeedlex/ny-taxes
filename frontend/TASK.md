@@ -378,21 +378,6 @@ Pagination: `limit=100&offset=0` (simple, server has max 1000).
 | `StatusBadge` | `src/components/StatusBadge.tsx` | Coloured badge for FileTask status |
 | `TaxBreakdownCard` | `src/components/TaxBreakdownCard.tsx` | Renders state/county/city/special rates + jurisdiction list |
 
----
-
-## Environment Variables
-
-Copy `frontend/.env.example` to `frontend/.env` before running locally.
-
-```dotenv
-VITE_API_URL=http://localhost:8000
-VITE_WS_URL=ws://localhost:8000
-```
-
-Both are baked in at build time by Vite.
-
----
-
 ## Dev Tools Reference
 
 All commands run from the `frontend/` directory.
@@ -416,6 +401,7 @@ React Query DevTools are included in development builds — open the floating bu
 - All the UI text should be in English.
 - Follow the existing design patterns in the app, using shadcn/ui components and Tailwind
 - Use the colors from the tailwind config (`text-foreground`, `bg-primary`, etc.) for consistency. Avoid introducing new colors if possible
+- All the pages should be responsive and look good on both desktop and mobile screen sizes. Use Tailwind's responsive utilities to achieve this.
 
 ## Implementation Order (suggested)
 
