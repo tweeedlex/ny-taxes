@@ -101,10 +101,10 @@ export default function Layout() {
         {/* User + Logout */}
         <div className="p-3 space-y-1">
           <div
-            className="flex items-center gap-3 px-3 py-2.5 rounded-lg"
-            style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}
+              className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-secondary border border-border"
+            
           >
-            <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 bg-zinc-700 text-foreground">
+            <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold border shrink-0 bg-secondary text-foreground">
               A
             </div>
             <div className="flex-1 min-w-0">
