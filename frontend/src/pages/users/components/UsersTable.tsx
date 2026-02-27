@@ -1,18 +1,19 @@
-import { Skeleton } from "@/components/ui/skeleton";
-import { Users } from "lucide-react";
-import { UserTableRow, type UserRow } from "./UserTableRow";
+import { Skeleton } from '@/components/ui/skeleton'
+import { Users } from 'lucide-react'
+import { UserTableRow } from './UserTableRow'
+import type { User } from '@/types'
 
 const COLUMNS = [
-  { label: "User", w: "w-[360px]" },
-  { label: "Username", w: "w-40" },
-  { label: "Permissions", w: "w-[420px]" },
-  { label: "Created", w: "w-40" },
-  { label: "", w: "w-24" }, // actions
-] as const;
+  { label: 'User', w: 'w-[360px]' },
+  { label: 'Login', w: 'w-40' },
+  { label: 'Authorities', w: 'w-[420px]' },
+  { label: 'Created', w: 'w-40' },
+  { label: '', w: 'w-24' },
+] as const
 
 interface UsersTableProps {
-  users: UserRow[];
-  loading?: boolean;
+  users: User[]
+  loading?: boolean
 }
 
 export function UsersTable({ users, loading = false }: UsersTableProps) {
@@ -27,13 +28,11 @@ export function UsersTable({ users, loading = false }: UsersTableProps) {
                   key={idx}
                   className={`px-4 py-3 text-left text-[11px] font-semibold text-muted-foreground uppercase tracking-wider ${w}`}
                 >
-                  {/* для actions пусто */}
                   {label}
                 </th>
               ))}
             </tr>
           </thead>
-
           <tbody>
             {loading ? (
               <LoadingRows />
@@ -48,7 +47,7 @@ export function UsersTable({ users, loading = false }: UsersTableProps) {
         </table>
       </div>
     </div>
-  );
+  )
 }
 
 function LoadingRows() {
@@ -64,7 +63,7 @@ function LoadingRows() {
         </tr>
       ))}
     </>
-  );
+  )
 }
 
 function EmptyState() {
@@ -76,15 +75,11 @@ function EmptyState() {
             <Users className="w-6 h-6 text-muted-foreground" />
           </div>
           <div>
-            <div className="text-sm font-medium text-muted-foreground">
-              No users found
-            </div>
-            <div className="text-xs text-muted-foreground mt-1">
-              Try adjusting your search or filters
-            </div>
+            <div className="text-sm font-medium text-muted-foreground">No users found</div>
+            <div className="text-xs text-muted-foreground mt-1">Try adjusting your search or filters</div>
           </div>
         </div>
       </td>
     </tr>
-  );
+  )
 }
