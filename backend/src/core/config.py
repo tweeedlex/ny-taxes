@@ -46,6 +46,8 @@ class Settings(BaseSettings):
     bootstrap_admin_password: str | None = None
     bootstrap_admin_full_name: str = "System Admin"
 
+    cors_origins: list[str] = ["http://localhost:5173", "https://bebrainc-ny-taxes.netlify.app"]
+
     @property
     def database_url(self) -> str:
         user = quote_plus(self.postgres_user)
