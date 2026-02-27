@@ -152,6 +152,11 @@ docker-compose up --build -d
 
 Frontend URL:
 - `http://localhost:5173`
+- deploy: `https://bebrainc-ny-taxes.netlify.app/login`
+
+### Test credentials:
+- login: `admin`
+- password: `admin12345`
 
 ## API Surface
 
