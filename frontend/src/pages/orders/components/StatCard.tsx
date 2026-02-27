@@ -31,25 +31,26 @@ type Accent = 'amber' | 'emerald' | 'neutral'
 
 const ACCENT_STYLES: Record<Accent, { icon: string; bg: string; trend: string; divider: string; spark: string }> = {
   amber: {
-    icon: 'text-foreground',
-    bg: 'bg-secondary',
-    trend: 'text-muted-foreground',
-    divider: 'border-border',
-    spark: 'text-muted-foreground/40',
+
+    bg: "bg-rose-200/55 ring-1 ring-rose-300/60 dark:bg-secondary dark:ring-0",
+    icon: "text-rose-900 dark:text-foreground",
+    trend: "text-rose-900 dark:text-muted-foreground",
+    divider: "border-rose-300/50 dark:border-border",
+    spark: "text-rose-700/70 dark:text-muted-foreground/40",
   },
   emerald: {
-    icon: 'text-foreground',
-    bg: 'bg-secondary',
-    trend: 'text-muted-foreground',
-    divider: 'border-border',
-    spark: 'text-muted-foreground/40',
+    bg: "bg-emerald-200/55 ring-1 ring-emerald-300/60 dark:bg-secondary dark:ring-0",
+    icon: "text-emerald-900 dark:text-foreground",
+    trend: "text-emerald-900 dark:text-muted-foreground",
+    divider: "border-emerald-300/50 dark:border-border",
+    spark: "text-emerald-700/70 dark:text-muted-foreground/40",
   },
   neutral: {
-    icon: 'text-foreground',
-    bg: 'bg-secondary',
-    trend: 'text-muted-foreground',
-    divider: 'border-border',
-    spark: 'text-muted-foreground/40',
+    bg: "bg-sky-200/50 ring-1 ring-sky-300/60 dark:bg-secondary dark:ring-0",
+    icon: "text-sky-900 dark:text-foreground",
+    trend: "text-sky-900 dark:text-muted-foreground",
+    divider: "border-sky-300/50 dark:border-border",
+    spark: "text-sky-700/70 dark:text-muted-foreground/40",
   },
 }
 
