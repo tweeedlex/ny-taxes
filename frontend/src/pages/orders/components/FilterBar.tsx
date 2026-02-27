@@ -57,7 +57,7 @@ export function FilterBar({
         <div className="ml-auto flex items-center gap-2">
           <span className="text-xs text-muted-foreground">{rangeText}</span>
           <Select value={String(pageSize)} onValueChange={(v) => onPageSizeChange(Number(v))}>
-            <SelectTrigger className="h-8 w-[70px] text-xs border-zinc-700 bg-background text-zinc-300">
+            <SelectTrigger className="h-8 w-[100px] text-xs border-border bg-card text-foreground dark:border-zinc-700 dark:bg-background dark:text-zinc-300">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -124,7 +124,8 @@ function ExpandedFilters() {
             <Input
               type={type ?? 'text'}
               placeholder={placeholder}
-              className="h-8 text-xs bg-background border-zinc-700 text-zinc-300 placeholder:text-zinc-600"
+              className="h-8 text-xs bg-card border-border text-foreground placeholder:text-muted-foreground
+             dark:bg-background dark:border-zinc-700 dark:text-zinc-300 dark:placeholder:text-zinc-600"
             />
           </div>
         ))}

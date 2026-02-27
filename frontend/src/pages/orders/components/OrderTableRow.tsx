@@ -1,23 +1,32 @@
-import React from 'react'
-import { motion, AnimatePresence } from 'motion/react'
-import { MapPin, Percent } from 'lucide-react'
-import { Badge } from '@/components/ui/badge'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { TaxBreakdownTooltip } from './TaxBreakdownTooltip'
-import { ExpandedOrderRow } from './ExpandedOrderRow'
-import { formatMoney, formatDate, formatTime } from '../utils/formatters'
-import type { Order } from '@/types'
+import React from "react";
+import { motion, AnimatePresence } from "motion/react";
+import { MapPin, Percent } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { TaxBreakdownTooltip } from "./TaxBreakdownTooltip";
+import { ExpandedOrderRow } from "./ExpandedOrderRow";
+import { formatMoney, formatDate, formatTime } from "../utils/formatters";
+import type { Order } from "@/types";
 
-const COLUMN_COUNT = 10
+const COLUMN_COUNT = 10;
 
 interface OrderTableRowProps {
-  order: Order
-  index: number
-  isExpanded: boolean
-  onToggle: () => void
+  order: Order;
+  index: number;
+  isExpanded: boolean;
+  onToggle: () => void;
 }
 
-export function OrderTableRow({ order, index, isExpanded, onToggle }: OrderTableRowProps) {
+export function OrderTableRow({
+  order,
+  index,
+  isExpanded,
+  onToggle,
+}: OrderTableRowProps) {
   return (
     <React.Fragment>
       <motion.tr
@@ -29,44 +38,50 @@ export function OrderTableRow({ order, index, isExpanded, onToggle }: OrderTable
       >
         {/* ID */}
         <td className="px-4 py-3">
-          <span className="font-mono text-xs text-muted-foreground">#{order.id}</span>
+          <span className="font-mono text-xs text-muted-foreground">
+            #{order.id}
+          </span>
         </td>
 
         {/* Timestamp */}
         <td className="px-4 py-3">
-          <div className="text-xs text-foreground">{formatDate(order.timestamp)}</div>
-          <div className="text-[10px] text-muted-foreground mt-0.5">{formatTime(order.timestamp)}</div>
+          <div className="text-xs text-foreground">
+            {formatDate(order.timestamp)}
+          </div>
+          <div className="text-[10px] text-muted-foreground mt-0.5">
+            {formatTime(order.timestamp)}
+          </div>
         </td>
 
         {/* Author */}
         <td className="px-4 py-3">
           {order.author_login ? (
-            <div className="flex items-center gap-1.5">
-              <div className="w-5 h-5 rounded-full bg-zinc-700 flex items-center justify-center text-[9px] font-bold text-zinc-300">
-                {order.author_login[0].toUpperCase()}
+            <div className="flex items-center gap-2">
+              <div
+                className="size-5 rounded-full bg-muted border border-border text-foreground
+                   grid place-items-center text-[9px] font-bold leading-none"
+                aria-hidden
+              >
+                {order.author_login[0]?.toUpperCase()}
               </div>
-              <span className="text-xs text-zinc-300">{order.author_login}</span>
+
+              <span className="text-xs text-foreground">
+                {order.author_login}
+              </span>
             </div>
           ) : (
-            <span className="text-xs text-zinc-600 italic">—</span>
+            <span className="text-xs text-muted-foreground italic">—</span>
           )}
-        </td>
-
-        {/* Coordinates */}
-        <td className="px-4 py-3">
-          <div className="flex items-center gap-1">
-            <MapPin className="w-3 h-3 text-muted-foreground shrink-0" />
-            <span className="text-[11px] font-mono text-muted-foreground">
-              {order.latitude.toFixed(4)}, {order.longitude.toFixed(4)}
-            </span>
-          </div>
         </td>
 
         {/* Reporting Code */}
         <td className="px-4 py-3">
           <Badge
             variant="secondary"
-            className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-card text-zinc-300 border border-zinc-700"
+            className="
+      text-[10px] font-mono px-2 py-0.5 rounded-md
+      bg-secondary text-foreground border border-border
+    "
           >
             {order.reporting_code}
           </Badge>
@@ -119,15 +134,19 @@ export function OrderTableRow({ order, index, isExpanded, onToggle }: OrderTable
                     key={i}
                     className="w-3.5 h-3.5 rounded-sm"
                     style={{
-                      background: rate > 0
-                        ? `rgba(161,161,170,${0.2 + i * 0.2})`
-                        : 'rgba(255,255,255,0.04)',
+                      background:
+                        rate > 0
+                          ? `rgba(161,161,170,${0.2 + i * 0.2})`
+                          : "rgba(255,255,255,0.04)",
                     }}
                   />
                 ))}
               </button>
             </TooltipTrigger>
-            <TooltipContent side="left" className="p-3 bg-background border-border">
+            <TooltipContent
+              side="left"
+              className="p-3 bg-background border-border"
+            >
               <TaxBreakdownTooltip order={order} />
             </TooltipContent>
           </Tooltip>
@@ -144,5 +163,5 @@ export function OrderTableRow({ order, index, isExpanded, onToggle }: OrderTable
         )}
       </AnimatePresence>
     </React.Fragment>
-  )
+  );
 }

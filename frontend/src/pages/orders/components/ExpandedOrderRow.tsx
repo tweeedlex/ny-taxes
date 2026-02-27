@@ -5,10 +5,10 @@ import type { Order, TaxBreakdown } from '@/types'
 type BreakdownKey = keyof TaxBreakdown
 
 const BREAKDOWN_ITEMS: { key: BreakdownKey; label: string; color: string }[] = [
-  { key: 'state_rate', label: 'State', color: '#52525b' },
-  { key: 'county_rate', label: 'County', color: '#71717a' },
-  { key: 'city_rate', label: 'City', color: '#a1a1aa' },
-  { key: 'special_rates', label: 'Special', color: '#d4d4d8' },
+ { key: 'state_rate',   label: 'State',   color: '#0A84FF' }, // systemBlue
+  { key: 'county_rate',  label: 'County',  color: '#64D2FF' }, // systemTeal
+  { key: 'city_rate',    label: 'City',    color: '#BF5AF2' }, // systemPurple
+  { key: 'special_rates',label: 'Special', color: '#FF9F0A' }, // systemOrange
 ]
 
 export function ExpandedOrderRow({ order, colSpan }: { order: Order; colSpan: number }) {
