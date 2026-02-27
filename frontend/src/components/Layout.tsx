@@ -14,19 +14,59 @@ import {
 import { cn } from '@/lib/utils'
 import { Separator } from './ui/separator'
 import { ThemeToggle } from './ThemeToggle'
+import { useAuthStore } from '@/store/auth.store'
+import { authApi } from '@/lib/endpoints'
+import toast from 'react-hot-toast'
 
-const NAV_ITEMS = [
-  { to: '/orders', icon: ShoppingCart, label: 'Orders', badge: '1.2k' },
+interface NavItem {
+  to: string
+  icon: typeof ShoppingCart
+  label: string
+  authority?: string
+}
+
+const NAV_ITEMS: NavItem[] = [
+  { to: '/orders', icon: ShoppingCart, label: 'Orders' },
   { to: '/orders/import', icon: Upload, label: 'CSV Import' },
   { to: '/stats', icon: BarChart3, label: 'Statistics' },
-  { to: '/users', icon: Users, label: 'Users' },
+  { to: '/users', icon: Users, label: 'Users', authority: 'read_users' },
 ]
+
+function getUserInitials(user: { full_name: string | null; login: string }): string {
+  if (user.full_name) {
+    return user.full_name
+      .split(' ')
+      .filter(Boolean)
+      .map((w) => w[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2)
+  }
+  return user.login.slice(0, 2).toUpperCase()
+}
 
 export default function Layout() {
   const [mobileOpen, setMobileOpen] = useState(false)
   const navigate = useNavigate()
+  const user = useAuthStore((s) => s.user)
+  const clearUser = useAuthStore((s) => s.clearUser)
 
   const close = () => setMobileOpen(false)
+
+  const handleLogout = async () => {
+    try {
+      await authApi.logout()
+    } catch {
+      // ignore logout errors
+    }
+    clearUser()
+    navigate('/login')
+    toast.success('Signed out')
+  }
+
+  const visibleNav = NAV_ITEMS.filter(
+    (item) => !item.authority || user?.authorities.includes(item.authority),
+  )
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -79,7 +119,7 @@ export default function Layout() {
           <p className="px-3 py-1 text-[9px] font-bold text-muted-foreground/40 uppercase tracking-widest mb-2">
             Workspace
           </p>
-          {NAV_ITEMS.map(({ to, icon: Icon, label, badge }) => (
+          {visibleNav.map(({ to, icon: Icon, label }) => (
             <NavLink
               key={to}
               to={to}
@@ -91,11 +131,6 @@ export default function Layout() {
             >
               <Icon className="w-4 h-4 shrink-0" />
               <span className="flex-1">{label}</span>
-              {badge && (
-                <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-zinc-700/80 text-zinc-400">
-                  {badge}
-                </span>
-              )}
             </NavLink>
           ))}
         </nav>
@@ -108,16 +143,20 @@ export default function Layout() {
         <div className="p-3 space-y-1">
           <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-secondary border border-border">
             <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold border shrink-0 bg-secondary text-foreground">
-              A
+              {user ? getUserInitials(user) : '?'}
             </div>
             <div className="flex-1 min-w-0">
-              <div className="text-xs font-semibold text-foreground truncate">Admin</div>
-              <div className="text-[9px] text-muted-foreground/60 truncate">edit_orders · edit_users</div>
+              <div className="text-xs font-semibold text-foreground truncate">
+                {user?.full_name || user?.login || 'Unknown'}
+              </div>
+              <div className="text-[9px] text-muted-foreground/60 truncate">
+                {user?.authorities.join(' · ') || 'No permissions'}
+              </div>
             </div>
             <Zap className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
           </div>
           <button
-            onClick={() => navigate('/login')}
+            onClick={handleLogout}
             className="nav-item w-full text-muted-foreground/50 hover:text-rose-400 hover:bg-rose-500/5"
           >
             <LogOut className="w-3.5 h-3.5" />
