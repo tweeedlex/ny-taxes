@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback } from 'react'
 import { useWs } from '@/hooks/use-ws'
 import type { TaxPreviewWsMessage, TaxPreviewWsSuccess } from '@/types'
 
@@ -25,20 +25,23 @@ export function useTaxPreview() {
   const [loading, setLoading] = useState(false)
   const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined)
 
-  const { sendJsonMessage, lastJsonMessage } = useWs('/orders/tax/ws')
-
-  useEffect(() => {
-    if (!lastJsonMessage) return
-    const msg = lastJsonMessage as unknown as TaxPreviewWsMessage
-    setLoading(false)
-    if (msg.ok === true) {
-      setPreview(msg.result)
-      setError(null)
-    } else if (msg.ok === false) {
-      setPreview(null)
-      setError(msg.error.detail)
-    }
-  }, [lastJsonMessage])
+  const { sendJsonMessage } = useWs('/orders/tax/ws', {
+    onMessage: (event) => {
+      try {
+        const msg: TaxPreviewWsMessage = JSON.parse(event.data)
+        setLoading(false)
+        if (msg.ok === true) {
+          setPreview(msg.result)
+          setError(null)
+        } else if (msg.ok === false) {
+          setPreview(null)
+          setError(msg.error.detail)
+        }
+      } catch {
+        // ignore parse errors
+      }
+    },
+  })
 
   const send = useCallback(
     (input: TaxPreviewInput) => {

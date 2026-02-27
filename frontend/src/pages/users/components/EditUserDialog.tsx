@@ -1,4 +1,3 @@
-import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
@@ -37,11 +36,10 @@ interface Props {
 
 export function EditUserDialog({ open, onOpenChange, user }: Props) {
   const queryClient = useQueryClient()
-  const [serverError, setServerError] = useState<string | null>(null)
 
   const form = useForm<EditUserFormValues>({
     resolver: zodResolver(editUserSchema),
-    defaultValues: {
+    values: {
       login: user.login,
       password: '',
       full_name: user.full_name ?? '',
@@ -49,19 +47,6 @@ export function EditUserDialog({ open, onOpenChange, user }: Props) {
       authorities: user.authorities as EditUserFormValues['authorities'],
     },
   })
-
-  useEffect(() => {
-    if (open) {
-      form.reset({
-        login: user.login,
-        password: '',
-        full_name: user.full_name ?? '',
-        is_active: user.is_active,
-        authorities: user.authorities as EditUserFormValues['authorities'],
-      })
-      setServerError(null)
-    }
-  }, [open, user, form])
 
   const mutation = useMutation({
     mutationFn: (data: EditUserFormValues) =>
@@ -82,7 +67,7 @@ export function EditUserDialog({ open, onOpenChange, user }: Props) {
         if (err.status === 409) {
           form.setError('login', { message: 'Login already taken' })
         } else {
-          setServerError(err.detail)
+          form.setError('root', { message: err.detail })
         }
       } else {
         toast.error('Failed to update user')
@@ -174,7 +159,9 @@ export function EditUserDialog({ open, onOpenChange, user }: Props) {
               ))}
             </div>
 
-            {serverError && <p className="text-sm font-medium text-destructive">{serverError}</p>}
+            {form.formState.errors.root && (
+              <p className="text-sm font-medium text-destructive">{form.formState.errors.root.message}</p>
+            )}
 
             <div className="flex justify-end gap-2">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
