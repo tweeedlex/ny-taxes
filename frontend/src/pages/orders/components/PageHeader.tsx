@@ -18,9 +18,6 @@ export function PageHeader() {
           <h1 className="text-3xl font-bold text-zinc-50 tracking-tight">
             Order Management
           </h1>
-          <p className="text-sm text-muted-foreground mt-1.5">
-            Browse, filter and analyse all drone delivery orders with full tax breakdown.
-          </p>
         </div>
 
         <div className="flex items-center gap-2 mt-1">
