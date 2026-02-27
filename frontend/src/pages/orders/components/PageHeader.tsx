@@ -15,7 +15,7 @@ export function PageHeader() {
               Orders
             </span>
           </div>
-          <h1 className="text-3xl font-bold text-zinc-50 tracking-tight">
+          <h1 className="text-3xl font-bold text-foreground tracking-tight">
             Order Management
           </h1>
         </div>
