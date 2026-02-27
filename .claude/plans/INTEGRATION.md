@@ -232,5 +232,5 @@ After each phase:
 1. `npm run build` — no TypeScript errors
 2. `npm run dev` — app starts, pages load
 3. Playwright MCP screenshot — visual check of layouts
-4. Manual test against running backend (`docker compose up` in backend/)
+4. Manual test against running backend (VITE_API_URL, VITE_WS_URL) — verify real API calls, auth flow, CSV import, stats, user CRUD
 5. Final: `npm run lint` clean, all pages responsive, dark/light theme works
