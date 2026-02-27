@@ -72,6 +72,80 @@ export interface FileTask {
   updated_at: string
 }
 
+// Request types
+export interface LoginRequest {
+  login: string
+  password: string
+}
+
+export interface RegisterRequest {
+  login: string
+  password: string
+  full_name?: string | null
+}
+
+export interface OrderCreateRequest {
+  latitude: number
+  longitude: number
+  subtotal: number
+  timestamp: string
+}
+
+export interface OrdersFilterParams {
+  limit?: number
+  offset?: number
+  reporting_code?: string
+  timestamp_from?: string
+  timestamp_to?: string
+  subtotal_min?: number
+  subtotal_max?: number
+}
+
+export interface UserCreateRequest {
+  login: string
+  password: string
+  full_name?: string | null
+  is_active?: boolean
+  authorities?: string[]
+}
+
+export interface UserUpdateRequest {
+  login?: string | null
+  password?: string | null
+  full_name?: string | null
+  is_active?: boolean | null
+  authorities?: string[] | null
+}
+
+// WebSocket response envelopes
+export interface TaxPreviewWsSuccess {
+  ok: true
+  result: {
+    reporting_code: string
+    jurisdictions: Record<string, JurisdictionRateItem[]>
+    composite_tax_rate: number
+    tax_amount: number
+    total_amount: number
+    breakdown: TaxBreakdown
+  }
+}
+
+export interface TaxPreviewWsError {
+  ok: false
+  error: {
+    code: string
+    detail: string
+    fields?: unknown[]
+  }
+}
+
+export type TaxPreviewWsMessage = TaxPreviewWsSuccess | TaxPreviewWsError
+
+// Import task WS
+export interface ImportTasksWsMessage {
+  tasks: FileTask[]
+}
+
 // Stats
 export interface OrdersStatsDay {
   date: string

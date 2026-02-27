@@ -1,8 +1,12 @@
+import { useState } from 'react'
 import { Package, Download, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { CreateOrderDialog } from './CreateOrderDialog'
 
 export function PageHeader() {
+  const [createOpen, setCreateOpen] = useState(false)
+
   return (
     <div className="border-b border-border">
       <div className="px-4 sm:px-8 py-4 sm:py-7 flex flex-col xs:flex-row xs:items-start gap-3 xs:gap-0 justify-between">
@@ -37,12 +41,15 @@ export function PageHeader() {
           <Button
             size="sm"
             className="h-8 gap-1.5 font-semibold"
+            onClick={() => setCreateOpen(true)}
           >
             <Plus className="w-3.5 h-3.5" />
             New Order
           </Button>
         </div>
       </div>
+
+      <CreateOrderDialog open={createOpen} onOpenChange={setCreateOpen} />
     </div>
   )
 }

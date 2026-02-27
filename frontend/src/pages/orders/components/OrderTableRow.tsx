@@ -1,6 +1,6 @@
 import React from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { MapPin, Percent } from "lucide-react";
+import { Percent } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { ExpandedOrderRow } from "./ExpandedOrderRow";
 import { formatMoney, formatDate, formatTime } from "../utils/formatters";

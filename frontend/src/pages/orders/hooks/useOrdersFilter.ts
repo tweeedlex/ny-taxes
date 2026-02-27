@@ -1,48 +1,118 @@
-import { useState, useMemo } from 'react'
-import { MOCK_ORDERS } from '@/lib/mock-data'
+import { useState, useCallback, useMemo } from 'react'
+import { useSearchParams } from 'react-router-dom'
+import { useOrders } from './useOrders'
+import type { OrdersFilterParams } from '@/types'
+
+function getParam(sp: URLSearchParams, key: string): string {
+  return sp.get(key) ?? ''
+}
+
+function getNumParam(sp: URLSearchParams, key: string, fallback: number): number {
+  const v = sp.get(key)
+  if (!v) return fallback
+  const n = Number(v)
+  return Number.isFinite(n) ? n : fallback
+}
 
 export function useOrdersFilter() {
-  const [search, setSearchState] = useState('')
-  const [page, setPage] = useState(0)
-  const [pageSize, setPageSizeState] = useState(10)
+  const [searchParams, setSearchParams] = useSearchParams()
   const [showFilters, setShowFilters] = useState(false)
   const [expandedId, setExpandedId] = useState<number | null>(null)
 
-  const filtered = useMemo(() => {
-    if (!search.trim()) return MOCK_ORDERS
-    const q = search.toLowerCase()
-    return MOCK_ORDERS.filter(
-      (o) =>
-        o.reporting_code.toLowerCase().includes(q) ||
-        (o.author_login ?? '').toLowerCase().includes(q) ||
-        String(o.id).includes(q)
-    )
-  }, [search])
+  const page = getNumParam(searchParams, 'page', 0)
+  const pageSize = getNumParam(searchParams, 'pageSize', 10)
+  const search = getParam(searchParams, 'search')
+  const reportingCode = getParam(searchParams, 'reporting_code')
+  const timestampFrom = getParam(searchParams, 'timestamp_from')
+  const timestampTo = getParam(searchParams, 'timestamp_to')
+  const subtotalMin = getParam(searchParams, 'subtotal_min')
+  const subtotalMax = getParam(searchParams, 'subtotal_max')
 
-  const total = filtered.length
+  const apiParams = useMemo<OrdersFilterParams>(() => {
+    const p: OrdersFilterParams = {
+      limit: pageSize,
+      offset: page * pageSize,
+    }
+    // search maps to reporting_code on the backend
+    const code = reportingCode || search || undefined
+    if (code) p.reporting_code = code
+    if (timestampFrom) p.timestamp_from = timestampFrom
+    if (timestampTo) p.timestamp_to = timestampTo
+    if (subtotalMin) p.subtotal_min = Number(subtotalMin)
+    if (subtotalMax) p.subtotal_max = Number(subtotalMax)
+    return p
+  }, [page, pageSize, search, reportingCode, timestampFrom, timestampTo, subtotalMin, subtotalMax])
+
+  const { data, isLoading, refetch } = useOrders(apiParams)
+
+  const orders = data?.items ?? []
+  const total = data?.total ?? 0
   const totalPages = Math.ceil(total / pageSize)
-  const paged = filtered.slice(page * pageSize, (page + 1) * pageSize)
 
-  function setSearch(value: string) {
-    setSearchState(value)
-    setPage(0)
-  }
+  const updateParams = useCallback(
+    (updates: Record<string, string | undefined>) => {
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev)
+        for (const [k, v] of Object.entries(updates)) {
+          if (v === undefined || v === '') {
+            next.delete(k)
+          } else {
+            next.set(k, v)
+          }
+        }
+        return next
+      })
+    },
+    [setSearchParams],
+  )
 
-  function setPageSize(value: number) {
-    setPageSizeState(value)
-    setPage(0)
-  }
+  const setSearch = useCallback(
+    (v: string) => updateParams({ search: v || undefined, page: undefined }),
+    [updateParams],
+  )
 
-  function toggleExpanded(id: number) {
-    setExpandedId((prev) => (prev === id ? null : id))
-  }
+  const setPage = useCallback(
+    (v: number) => updateParams({ page: v === 0 ? undefined : String(v) }),
+    [updateParams],
+  )
+
+  const setPageSize = useCallback(
+    (v: number) => updateParams({ pageSize: v === 10 ? undefined : String(v), page: undefined }),
+    [updateParams],
+  )
+
+  const setFilter = useCallback(
+    (key: string, v: string) => updateParams({ [key]: v || undefined, page: undefined }),
+    [updateParams],
+  )
+
+  const toggleExpanded = useCallback(
+    (id: number) => setExpandedId((prev) => (prev === id ? null : id)),
+    [],
+  )
 
   return {
-    search, setSearch,
-    page, setPage,
-    pageSize, setPageSize,
-    showFilters, setShowFilters,
-    expandedId, toggleExpanded,
-    paged, total, totalPages,
+    search,
+    setSearch,
+    page,
+    setPage,
+    pageSize,
+    setPageSize,
+    showFilters,
+    setShowFilters,
+    expandedId,
+    toggleExpanded,
+    orders,
+    total,
+    totalPages,
+    isLoading,
+    refetch,
+    // Expanded filter values
+    reportingCode,
+    timestampFrom,
+    timestampTo,
+    subtotalMin,
+    subtotalMax,
+    setFilter,
   }
 }
