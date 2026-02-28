@@ -46,7 +46,7 @@ class Settings(BaseSettings):
     bootstrap_admin_password: str | None = None
     bootstrap_admin_full_name: str = "System Admin"
 
-    cors_origins: list[str] = ["http://localhost:5173", "https://bebrainc-ny-taxes.netlify.app", "https://ny.artemka1806.dev"]
+    cors_origins: list[str] = ["http://localhost:5173", "http://localhost:3000", "https://bebrainc-ny-taxes.netlify.app", "https://ny.artemka1806.dev"]
 
     @property
     def database_url(self) -> str:
