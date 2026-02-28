@@ -199,6 +199,16 @@
           <label>Timestamp to <input name="timestamp_to" placeholder="2025-11-30T23:59:59Z" /></label>
           <label>Subtotal min <input name="subtotal_min" /></label>
           <label>Subtotal max <input name="subtotal_max" /></label>
+          <label>Sort
+            <select name="sort">
+              <option value="newest">newest</option>
+              <option value="oldest">oldest</option>
+              <option value="subtotal_asc">subtotal_asc</option>
+              <option value="subtotal_desc">subtotal_desc</option>
+              <option value="tax_asc">tax_asc</option>
+              <option value="tax_desc">tax_desc</option>
+            </select>
+          </label>
         </div>
         <button type="submit">List orders</button>
       </form>
@@ -405,7 +415,7 @@
     const form = e.currentTarget;
     const q = new URLSearchParams();
     const names = [
-      "limit", "offset", "reporting_code", "timestamp_from", "timestamp_to", "subtotal_min", "subtotal_max",
+      "limit", "offset", "reporting_code", "timestamp_from", "timestamp_to", "subtotal_min", "subtotal_max", "sort",
     ];
     for (const n of names) {
       const v = getFormValue(form, n);
@@ -422,7 +432,7 @@
       from_date: getFormValue(form, "from_date"),
       to_date: getFormValue(form, "to_date"),
     });
-    try { show(out.orders, await api(`/orders/stats?${q}`)); }
+    try { show(out.orders, await api(`/orders/stats/daily?${q}`)); }
     catch (err) { show(out.orders, err); }
   });
 
