@@ -125,11 +125,12 @@ function SidebarContent({onClose}: { onClose?: () => void }) {
             </div>
           </div>
           <button
-            className="text-muted-foreground/50 hover:text-rose-400 hover:bg-rose-500/5"
+             className="p-1.5 rounded-md text-muted-foreground/50 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
+
 
             onClick={handleLogout}
           >
-            <LogOut className="w-3.5 h-3.5 text-muted-foreground shrink-0"/>
+            <LogOut className="w-3.5 h-3.5"/>
           </button>
         </div>
       </div>
