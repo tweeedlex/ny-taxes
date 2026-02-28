@@ -156,7 +156,7 @@ Frontend URL:
 
 ### Test credentials:
 - login: `admin`
-- password: `admin12345`
+- password: `A7pM39PhxUO8gOot`
 
 ## API Surface
 
