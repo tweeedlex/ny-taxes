@@ -33,7 +33,7 @@ export const createUserSchema = z.object({
   authorities: z.array(authorityEnum).default([]),
 });
 
-export type CreateUserFormValues = z.infer<typeof createUserSchema>;
+export type CreateUserFormValues = z.input<typeof createUserSchema>;
 
 export const editUserSchema = z.object({
   login: z

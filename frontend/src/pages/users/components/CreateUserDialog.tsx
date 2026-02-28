@@ -54,7 +54,7 @@ export function CreateUserDialog({ open, onOpenChange }: Props) {
         password: data.password,
         full_name: data.full_name || null,
         is_active: data.is_active ?? true,
-        authorities: data.authorities,
+        authorities: data.authorities ?? [],
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] })
