@@ -29,7 +29,6 @@ export function StatsRow() {
         icon={Package}
         accent="neutral"
         delay={0}
-        subtitle="This month"
       />
       <StatCard
         label="Total Revenue"
@@ -38,7 +37,6 @@ export function StatsRow() {
         icon={DollarSign}
         accent="emerald"
         delay={0.1}
-        subtitle="Gross amount"
       />
       <StatCard
         label="Tax Collected"
@@ -47,7 +45,6 @@ export function StatsRow() {
         icon={TrendingUp}
         accent="amber"
         delay={0.2}
-        subtitle="NYS + County + City"
       />
       <StatCard
         label="Avg. Tax Rate"
@@ -56,7 +53,6 @@ export function StatsRow() {
         icon={Percent}
         accent="amber"
         delay={0.3}
-        subtitle="Composite rate"
       />
     </div>
   )

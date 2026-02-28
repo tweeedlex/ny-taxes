@@ -23,7 +23,6 @@ export default function OrdersPage() {
           total={filter.total}
           showFilters={filter.showFilters}
           onToggleFilters={() => filter.setShowFilters((s) => !s)}
-          onRefresh={filter.refetch}
           reportingCode={filter.reportingCode}
           timestampFrom={filter.timestampFrom}
           timestampTo={filter.timestampTo}
