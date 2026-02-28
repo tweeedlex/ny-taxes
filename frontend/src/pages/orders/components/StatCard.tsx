@@ -2,8 +2,6 @@ import React from "react";
 import { motion } from "motion/react";
 import CountUp from "@/components/CountUp";
 
-// Sparkline is only used by StatCard, so it lives here
-
 type Accent = "amber" | "emerald" | "neutral";
 
 const ACCENT_STYLES: Record<
@@ -64,7 +62,7 @@ export function StatCard({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, delay }}
     >
-      <div className="rounded-xl border border-border bg-card p-5 h-full flex items-start justify-between">
+      <div className="w-full rounded-xl border border-border bg-card p-2 md:p-3 lg:p-5 h-full flex items-start justify-between">
         {/* icon */}
         <div
           className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${s.bg}`}
