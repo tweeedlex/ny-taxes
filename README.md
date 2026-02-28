@@ -2,6 +2,10 @@
 
 [Live Demo](https://ny.artemka1806.dev)
 
+### Test credentials:
+- login: `admin`
+- password: `A7pM39PhxUO8gOot`
+
 This monorepo implements a New York State (NYS) sales tax system that calculates tax by delivery coordinates.
 
 Instead of ZIP-based matching, the engine uses NYS reporting codes mapped to geospatial boundaries (city first, then county).
