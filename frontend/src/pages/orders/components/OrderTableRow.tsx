@@ -37,14 +37,14 @@ export function OrderTableRow({
         onClick={onToggle}
       >
         {/* ID */}
-        <td className="px-4 py-3">
+        <td className="px-2 lg:px-4 py-3">
           <span className="font-mono text-xs text-muted-foreground">
             #{order.id}
           </span>
         </td>
 
         {/* Timestamp */}
-        <td className="px-4 py-3">
+        <td className="px-2 lg:px-4 py-3">
           <div className="text-xs text-foreground">
             {formatDate(order.timestamp)}
           </div>
@@ -54,7 +54,7 @@ export function OrderTableRow({
         </td>
 
         {/* Author */}
-        <td className="px-4 py-3">
+        <td className="px-2 lg:px-4 py-3">
           {order.author_login ? (
             <div className="flex items-center gap-2">
               <div
@@ -75,7 +75,7 @@ export function OrderTableRow({
         </td>
 
         {/* Reporting Code */}
-        <td className="px-4 py-3">
+        <td className="px-2 lg:px-4py-3">
           <Badge
             variant="secondary"
             className="
@@ -88,14 +88,14 @@ export function OrderTableRow({
         </td>
 
         {/* Subtotal */}
-        <td className="px-4 py-3">
+        <td className="px-2 lg:px-4 py-3">
           <span className="text-xs font-semibold text-foreground">
             {formatMoney(order.subtotal)}
           </span>
         </td>
 
         {/* Tax Rate */}
-        <td className="px-4 py-3">
+        <td className="px-2 lg:px-4 py-3">
           <div className="inline-flex items-center gap-1 text-xs font-mono px-1.5 py-0.5 rounded-md bg-secondary text-muted-foreground">
             <Percent className="w-2.5 h-2.5" />
             {(order.composite_tax_rate * 100).toFixed(4)}
@@ -103,21 +103,21 @@ export function OrderTableRow({
         </td>
 
         {/* Tax Amount */}
-        <td className="px-4 py-3">
+        <td className="px-2 lg:px-4 py-3">
           <span className="text-xs font-semibold text-muted-foreground">
             {formatMoney(order.tax_amount)}
           </span>
         </td>
 
         {/* Total */}
-        <td className="px-4 py-3">
+        <td className="px-2 lg:px-4 py-3">
           <span className="text-xs font-bold text-foreground">
             {formatMoney(order.total_amount)}
           </span>
         </td>
 
         {/* Breakdown */}
-        <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+        <td className="px-2 lg:px-4 py-3" onClick={(e) => e.stopPropagation()}>
           <Tooltip>
             <TooltipTrigger asChild>
               <button
