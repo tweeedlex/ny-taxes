@@ -29,6 +29,7 @@ import {
   VALID_AUTHORITIES,
   type EditUserFormValues,
 } from "../schemas";
+import { withImpliedAuthorities, withoutDependentAuthorities } from "../utils/authority";
 import type { User } from "@/types";
 
 interface Props {
@@ -216,11 +217,13 @@ export function EditUserDialog({ open, onOpenChange, user }: Props) {
                               checked={field.value?.includes(auth)}
                               onCheckedChange={(checked) => {
                                 const current = field.value ?? [];
-                                field.onChange(
-                                  checked
-                                    ? [...current, auth]
-                                    : current.filter((a: string) => a !== auth),
-                                );
+                                if (checked) {
+                                  const next = [...current, auth];
+                                  field.onChange(withImpliedAuthorities(next, auth, VALID_AUTHORITIES));
+                                } else {
+                                  const next = current.filter((a: string) => a !== auth);
+                                  field.onChange(withoutDependentAuthorities(next, auth));
+                                }
                               }}
                             />
                           </FormControl>

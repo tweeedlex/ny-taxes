@@ -1,16 +1,7 @@
 import { useState } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
-import {
-  ShoppingCart,
-  Upload,
-  BarChart3,
-  Users,
-  LogOut,
-  MapPin,
-  Menu,
-  X,
-} from 'lucide-react'
-import { motion, AnimatePresence } from 'motion/react'
+import { BarChart3, LogOut, MapPin, Menu, ShoppingCart, Upload, Users, X, } from 'lucide-react'
+import { AnimatePresence, motion } from 'motion/react'
 import { cn } from '@/lib/utils'
 import { Separator } from './ui/separator'
 import { ThemeToggle } from './ThemeToggle'
@@ -33,14 +24,14 @@ interface NavItem {
   to: string
   icon: typeof ShoppingCart
   label: string
-  authority?: string
+  authorities: string[]
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { to: '/orders', icon: ShoppingCart, label: 'Orders' },
-  { to: '/import', icon: Upload, label: 'CSV Import', authority: 'edit_orders' },
-  { to: '/stats', icon: BarChart3, label: 'Statistics' },
-  { to: '/users', icon: Users, label: 'Users', authority: 'read_users' },
+  { to: '/orders', icon: ShoppingCart, label: 'Orders', authorities: ['read_orders', 'edit_orders'] },
+  { to: '/import', icon: Upload, label: 'CSV Import', authorities: ['edit_orders'] },
+  { to: '/stats', icon: BarChart3, label: 'Statistics', authorities: ['read_orders', 'edit_orders'] },
+  { to: '/users', icon: Users, label: 'Users', authorities: ['read_users', 'edit_users'] },
 ]
 
 function getUserInitials(user: { full_name: string | null; login: string }): string {
@@ -75,7 +66,7 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
   }
 
   const visibleNav = NAV_ITEMS.filter(
-    (item) => !item.authority || user?.authorities.includes(item.authority),
+    (item) => user?.authorities.some(ua => item.authorities.includes(ua)),
   )
 
   return (

@@ -25,6 +25,7 @@ import {
 import { usersApi } from '@/lib/endpoints'
 import { ApiError } from '@/lib/api'
 import { createUserSchema, VALID_AUTHORITIES, type CreateUserFormValues } from '../schemas'
+import { withImpliedAuthorities, withoutDependentAuthorities } from '../utils/authority'
 
 interface Props {
   open: boolean
@@ -131,11 +132,13 @@ export function CreateUserDialog({ open, onOpenChange }: Props) {
                           checked={field.value?.includes(auth)}
                           onCheckedChange={(checked) => {
                             const current = field.value ?? []
-                            field.onChange(
-                              checked
-                                ? [...current, auth]
-                                : current.filter((a: string) => a !== auth),
-                            )
+                            if (checked) {
+                              const next = [...current, auth]
+                              field.onChange(withImpliedAuthorities(next, auth, VALID_AUTHORITIES))
+                            } else {
+                              const next = current.filter((a: string) => a !== auth)
+                              field.onChange(withoutDependentAuthorities(next, auth))
+                            }
                           }}
                         />
                       </FormControl>

@@ -14,7 +14,7 @@ export function Restrict({ authorities, children, fallback }: RestrictProps) {
   // User not loaded yet — render nothing while ProtectedRoute resolves
   if (!user) return null
 
-  if (!authorities.every((auth) => user.authorities.includes(auth))) {
+  if (!user.authorities.some((auth) => authorities.includes(auth as Authority))) {
     return fallback ?? null
   }
 
