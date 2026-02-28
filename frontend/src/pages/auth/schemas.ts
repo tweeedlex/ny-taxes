@@ -1,16 +1,22 @@
-import { z } from 'zod'
+import { z } from "zod";
+
+const noWhitespace = (label: string) =>
+  z
+    .string()
+    .min(1, `${label} is required`)
+    .refine((v) => !/\s/.test(v), { message: `${label} must not contain spaces` });
 
 export const loginSchema = z.object({
-  login: z.string().min(3, 'Login must be at least 3 characters'),
-  password: z.string().min(8, 'Password must be at least 8 characters'),
-})
+  login: noWhitespace("Login"),
+  password: noWhitespace("Password"),
+});
 
-export type LoginFormValues = z.infer<typeof loginSchema>
+export type LoginFormValues = z.infer<typeof loginSchema>;
 
 export const registerSchema = z.object({
-  login: z.string().min(3, 'Login must be at least 3 characters'),
-  password: z.string().min(8, 'Password must be at least 8 characters'),
-  full_name: z.string().optional(),
-})
+  login: noWhitespace("Login"),
+  password: noWhitespace("Password").min(8, "Password must be at least 8 characters"),
+  full_name: z.string().optional(), 
+});
 
-export type RegisterFormValues = z.infer<typeof registerSchema>
+export type RegisterFormValues = z.infer<typeof registerSchema>;
