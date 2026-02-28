@@ -126,15 +126,15 @@ Rules:
 
 ## Quick Start
 
-### Backend
+### Unified Docker Compose (root)
 
 ```bash
-cd backend
 cp .env.example .env
 docker-compose up --build -d
 ```
 
-Backend URLs:
+Main URLs:
+- Frontend: `http://localhost:3000`
 - API: `http://localhost:8000`
 - Swagger: `http://localhost:8000/docs`
 - Health: `http://localhost:8000/health`
@@ -143,16 +143,17 @@ Backend URLs:
 - MinIO API: `http://localhost:9000`
 - MinIO Console: `http://localhost:9001`
 
-### Frontend
+Stop stack:
 
 ```bash
-cd frontend
-docker-compose up --build -d
+docker-compose down
 ```
 
-Frontend URL:
-- `http://localhost:5173`
-- deploy: `https://bebrainc-ny-taxes.netlify.app/login`
+Important env vars for compose:
+- `PORT` (API publish port, default `8000`)
+- `FRONTEND_PORT` (frontend publish port, default `3000`)
+- `VITE_API_URL` / `VITE_WS_URL` (frontend build-time API/WS URLs)
+- `MINIO_PUBLIC_BASE_URL` (used in backend responses with file links)
 
 ### Test credentials:
 - login: `admin`
