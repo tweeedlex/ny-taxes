@@ -221,3 +221,12 @@
   animation-delay: 0.4s;
   opacity: 0;
 }
+/* iOS only */
+@supports (-webkit-touch-callout: none) {
+  input[type="date"],
+  input[type="datetime-local"] {
+    font-size: 16px;
+    line-height: 1.25;
+    height: 40px;
+  }
+}
