@@ -6,13 +6,13 @@ import type { Order } from '@/types'
 const COLUMNS: { label: string; w: string; hidden?: string }[] = [
   { label: 'ID', w: 'w-16' },
   { label: 'Timestamp', w: 'w-36' },
-  { label: 'Author', w: 'w-28', hidden: 'hidden sm:table-cell' },
-  { label: 'Coordinates', w: 'w-36', hidden: 'hidden sm:table-cell' },
+  { label: 'Author', w: 'w-28' },
   { label: 'Code', w: 'w-36' },
   { label: 'Subtotal', w: 'w-24' },
   { label: 'Tax Rate', w: 'w-24' },
-  { label: 'Tax Amount', w: 'w-24', hidden: 'hidden md:table-cell' },
+  { label: 'Tax Amount', w: 'w-24' },
   { label: 'Total', w: 'w-24' },
+  { label: 'Breakdown', w: 'w-20' },
 ]
 
 const SORTABLE = new Set(['Subtotal', 'Tax Rate', 'Tax Amount', 'Total'])
@@ -26,41 +26,43 @@ interface OrdersTableProps {
 
 export function OrdersTable({ orders, loading = false, expandedId, onToggleExpand }: OrdersTableProps) {
   return (
-    <div className="rounded-xl overflow-hidden border border-border bg-background overflow-x-auto">
-      <table className="w-full text-sm min-w-[600px]">
-        <thead>
-          <tr className="border-b border-border">
-            {COLUMNS.map(({ label, w, hidden }) => (
-              <th
-                key={label}
-                className={`px-4 py-3 text-left text-[11px] font-semibold text-muted-foreground uppercase tracking-wider ${w} ${hidden ?? ''}`}
-              >
-                <button className="flex items-center gap-1 hover:text-foreground transition-colors">
-                  {label}
-                  {SORTABLE.has(label) && <ArrowUpDown className="w-3 h-3 opacity-40" />}
-                </button>
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {loading ? (
-            <LoadingRows />
-          ) : orders.length > 0 ? (
-            orders.map((order, idx) => (
-              <OrderTableRow
-                key={order.id}
-                order={order}
-                index={idx}
-                isExpanded={expandedId === order.id}
-                onToggle={() => onToggleExpand(order.id)}
-              />
-            ))
-          ) : (
-            <EmptyState />
-          )}
-        </tbody>
-      </table>
+    <div className="w-full rounded-xl border border-border bg-background">
+      <div className="overflow-x-auto rounded-xl">
+        <table className="min-w-max w-full text-sm">
+          <thead>
+            <tr className="border-b border-border">
+              {COLUMNS.map(({ label, w }) => (
+                <th
+                  key={label}
+                  className={`px-4 py-3 text-left text-[11px] font-semibold text-muted-foreground uppercase tracking-wider ${w}`}
+                >
+                  <button className="flex items-center gap-1 hover:text-foreground transition-colors">
+                    {label}
+                    {SORTABLE.has(label) && <ArrowUpDown className="w-3 h-3 opacity-40" />}
+                  </button>
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {loading ? (
+              <LoadingRows />
+            ) : orders.length > 0 ? (
+              orders.map((order, idx) => (
+                <OrderTableRow
+                  key={order.id}
+                  order={order}
+                  index={idx}
+                  isExpanded={expandedId === order.id}
+                  onToggle={() => onToggleExpand(order.id)}
+                />
+              ))
+            ) : (
+              <EmptyState />
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   )
 }
