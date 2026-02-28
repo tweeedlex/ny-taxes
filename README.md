@@ -90,7 +90,7 @@ Current runtime uses PostgreSQL as the primary source for tax engine data:
 On startup, backend seeds these tables from static files only if tables are empty, then serves calculations from DB-backed in-memory caches.
 This reduces direct file dependency in request-time logic and makes data lifecycle more manageable.
 
-## Tax Engine Logic (Actual Runtime)
+## Tax Engine Logic
 
 1. Validate payload and coordinates.
 2. Validate timestamp date is not earlier than `2025-03-01`.
@@ -99,7 +99,7 @@ This reduces direct file dependency in request-time logic and makes data lifecyc
 5. Load rates by reporting code from `tax_rates`.
 6. Compute and return totals and breakdown.
 
-## Tax Rates JSON Format (Current)
+## Tax Rates JSON Format
 
 ```json
 {
