@@ -26,10 +26,10 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  {to: '/orders', icon: ShoppingCart, label: 'Orders'},
-  {to: '/import', icon: Upload, label: 'CSV Import', authority: 'edit_orders'},
-  {to: '/stats', icon: BarChart3, label: 'Statistics'},
-  {to: '/users', icon: Users, label: 'Users', authority: 'read_users'},
+  { to: '/orders', icon: ShoppingCart, label: 'Orders' },
+  { to: '/import', icon: Upload, label: 'CSV Import', authority: 'edit_orders' },
+  { to: '/stats', icon: BarChart3, label: 'Statistics' },
+  { to: '/users', icon: Users, label: 'Users', authority: 'read_users' },
 ]
 
 function getUserInitials(user: { full_name: string | null; login: string }): string {
@@ -45,7 +45,7 @@ function getUserInitials(user: { full_name: string | null; login: string }): str
   return user.login.slice(0, 2).toUpperCase()
 }
 
-function SidebarContent({onClose}: { onClose?: () => void }) {
+function SidebarContent({ onClose }: { onClose?: () => void }) {
   const navigate = useNavigate()
   const user = useAuthStore((s) => s.user)
   const clearUser = useAuthStore((s) => s.clearUser)
@@ -67,31 +67,31 @@ function SidebarContent({onClose}: { onClose?: () => void }) {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="absolute top-0 left-0 right-0 h-px bg-border"/>
+      <div className="absolute top-0 left-0 right-0 h-px bg-border" />
 
       {/* Logo */}
       <div className="relative px-4 py-5 flex items-center gap-3">
         <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 bg-foreground">
-          <MapPin className="w-4 h-4 text-background" strokeWidth={2.5}/>
+          <MapPin className="w-4 h-4 text-background" strokeWidth={2.5} />
         </div>
         <div>
           <div className="text-sm font-bold text-foreground leading-none tracking-tight">NYS Taxes</div>
         </div>
         <div className="ml-auto flex items-center gap-1">
-          <ThemeToggle className="p-0"/>
+          <ThemeToggle className="p-0" />
           {onClose && (
             <button
               onClick={onClose}
               className="md:hidden p-2 text-muted-foreground hover:text-foreground transition-colors"
             >
-              <X className="w-4 h-4"/>
+              <X className="w-4 h-4" />
             </button>
           )}
         </div>
       </div>
 
       <div className="px-3">
-        <Separator className="opacity-20"/>
+        <Separator className="opacity-20" />
       </div>
 
       {/* Nav */}
@@ -99,15 +99,15 @@ function SidebarContent({onClose}: { onClose?: () => void }) {
         <p className="px-3 py-1 text-[9px] font-bold text-muted-foreground/40 uppercase tracking-widest mb-2">
           Workspace
         </p>
-        {visibleNav.map(({to, icon: Icon, label}) => (
+        {visibleNav.map(({ to, icon: Icon, label }) => (
           <NavLink
             key={to}
             to={to}
             end={to === '/'}
             onClick={onClose}
-            className={({isActive}) => cn('nav-item', isActive && 'active')}
+            className={({ isActive }) => cn('nav-item', isActive && 'active')}
           >
-            <Icon className="w-4 h-4 shrink-0"/>
+            <Icon className="w-4 h-4 shrink-0" />
             <span className="flex-1">{label}</span>
           </NavLink>
         ))}
@@ -125,12 +125,12 @@ function SidebarContent({onClose}: { onClose?: () => void }) {
             </div>
           </div>
           <button
-             className="p-1.5 rounded-md text-muted-foreground/50 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
+            className="p-1.5 rounded-md text-muted-foreground/50 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
 
 
             onClick={handleLogout}
           >
-            <LogOut className="w-3.5 h-3.5"/>
+            <LogOut className="w-3.5 h-3.5" />
           </button>
         </div>
       </div>
@@ -147,19 +147,19 @@ export default function Layout() {
       {/* ── DESKTOP SIDEBAR ── */}
       <aside
         className="hidden md:flex fixed left-0 top-0 h-full flex-col z-20 border-r border-border"
-        style={{width: 'var(--sidebar-width)', background: 'var(--sidebar)'}}
+        style={{ width: 'var(--sidebar-width)', background: 'var(--sidebar)' }}
       >
-        <SidebarContent/>
+        <SidebarContent />
       </aside>
 
       {/* ── MOBILE HEADER ── */}
       <header
-        className="md:hidden fixed top-0 left-0 right-0 z-30 h-14 border-b border-border flex items-center justify-between px-4"
-        style={{background: 'var(--sidebar)'}}
+        className="md:hidden fixed top-0 left-0 right-0 z-[1050] h-14 border-b border-border flex items-center justify-between px-4"
+        style={{ background: 'var(--sidebar)' }}
       >
         <div className="flex items-center gap-2.5">
           <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-foreground shrink-0">
-            <MapPin className="w-3.5 h-3.5 text-background" strokeWidth={2.5}/>
+            <MapPin className="w-3.5 h-3.5 text-background" strokeWidth={2.5} />
           </div>
           <div>
             <div className="text-sm font-bold text-foreground leading-none">NYS Taxes</div>
@@ -169,7 +169,7 @@ export default function Layout() {
           onClick={() => setMobileOpen(true)}
           className="p-2 text-muted-foreground hover:text-foreground transition-colors"
         >
-          <Menu className="w-5 h-5"/>
+          <Menu className="w-5 h-5" />
         </button>
       </header>
 
@@ -180,25 +180,25 @@ export default function Layout() {
             {/* Backdrop */}
             <motion.div
               key="backdrop"
-              initial={{opacity: 0}}
-              animate={{opacity: 1}}
-              exit={{opacity: 0}}
-              transition={{duration: 0.2}}
-              className="md:hidden fixed inset-0 z-40 bg-black/60 backdrop-blur-sm"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="md:hidden fixed inset-0 z-[1100] bg-black/60 backdrop-blur-sm"
               onClick={() => setMobileOpen(false)}
             />
 
             {/* Drawer */}
             <motion.aside
               key="drawer"
-              initial={{x: '-100%'}}
-              animate={{x: 0}}
-              exit={{x: '-100%'}}
-              transition={{duration: 0.25, ease: 'easeInOut'}}
-              className="md:hidden fixed left-0 top-0 h-full z-50 border-r border-border flex flex-col"
-              style={{width: 'var(--sidebar-width)', background: 'var(--sidebar)'}}
+              initial={{ x: '-100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '-100%' }}
+              transition={{ duration: 0.25, ease: 'easeInOut' }}
+              className="md:hidden fixed left-0 top-0 h-full z-[1150] border-r border-border flex flex-col"
+              style={{ width: 'var(--sidebar-width)', background: 'var(--sidebar)' }}
             >
-              <SidebarContent onClose={() => setMobileOpen(false)}/>
+              <SidebarContent onClose={() => setMobileOpen(false)} />
             </motion.aside>
           </>
         )}
@@ -207,9 +207,9 @@ export default function Layout() {
       {/* ── MAIN ── */}
       <main
         className="flex-1 min-h-screen overflow-x-hidden pt-14 md:pt-0 !ml-0 md:!ml-[240px] transition-all"
-        style={{marginLeft: 'var(--sidebar-width)'}}
+        style={{ marginLeft: 'var(--sidebar-width)' }}
       >
-        <Outlet/>
+        <Outlet />
       </main>
 
     </div>
