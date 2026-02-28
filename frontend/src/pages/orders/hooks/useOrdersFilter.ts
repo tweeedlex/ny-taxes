@@ -96,6 +96,20 @@ export function useOrdersFilter() {
     [updateParams],
   )
 
+  const hasActiveFilters = !!(search || reportingCode || timestampFrom || timestampTo || subtotalMin || subtotalMax)
+
+  const clearFilters = useCallback(() => {
+    updateParams({
+      search: undefined,
+      reporting_code: undefined,
+      timestamp_from: undefined,
+      timestamp_to: undefined,
+      subtotal_min: undefined,
+      subtotal_max: undefined,
+      page: undefined,
+    })
+  }, [updateParams])
+
   const toggleExpanded = useCallback(
     (id: number) => setExpandedId((prev) => (prev === id ? null : id)),
     [],
@@ -126,5 +140,7 @@ export function useOrdersFilter() {
     subtotalMin,
     subtotalMax,
     setFilter,
+    hasActiveFilters,
+    clearFilters,
   }
 }

@@ -27,7 +27,10 @@
       "Bash(gh pr:*)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(npm run:*)",
+      "Bash(xargs grep:*)",
+      "Bash(npx eslint:*)"
     ]
   },
   "hooks": {

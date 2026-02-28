@@ -30,6 +30,8 @@ export default function OrdersPage() {
           subtotalMin={filter.subtotalMin}
           subtotalMax={filter.subtotalMax}
           onFilterChange={filter.setFilter}
+          hasActiveFilters={filter.hasActiveFilters}
+          onClearFilters={filter.clearFilters}
         />
         <div className="px-4 lg:px-8 pb-8 flex-1 min-w-0 w-full">
           <Pagination

@@ -17,11 +17,6 @@ function formatFileId(filePath: string): string {
   return `${name.slice(0, 6)}...${name.slice(-6)}${ext}`
 }
 
-function getFileUrl(filePath: string): string {
-  const apiUrl = import.meta.env.VITE_API_URL || ''
-  return `${apiUrl}/orders/import/tasks/files/${encodeURIComponent(filePath.split('/').pop() ?? filePath)}`
-}
-
 export function TasksTable({ tasks, isLoading }: Props) {
   return (
     <div className="rounded-xl overflow-hidden border border-border bg-background">
@@ -66,11 +61,11 @@ function TaskRow({ task }: { task: FileTask }) {
         <div className="flex items-center gap-2">
           <span className="font-mono text-xs text-muted-foreground">#{task.id}</span>
           <a
-            href={getFileUrl(task.file_path)}
+            href={task.file_path}
             target="_blank"
             rel="noopener noreferrer"
             className="text-sm font-mono text-foreground hover:underline truncate"
-            title={task.file_path.split('/').pop() ?? task.file_path}
+            title={decodeURIComponent(task.file_path.split('/').pop() ?? task.file_path)}
           >
             {displayId}
           </a>
