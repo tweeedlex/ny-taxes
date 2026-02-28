@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { Loader2 } from 'lucide-react'
+import { Loader2, MapPin } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 import {
@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import {
   Form,
   FormControl,
@@ -28,24 +29,62 @@ import { ApiError } from '@/lib/api'
 import { useTaxPreview } from '../hooks/useTaxPreview'
 import { createOrderSchema, type CreateOrderFormValues } from '../schemas'
 import { formatMoney, formatRate } from '../utils/formatters'
+import { TaxZoneMapPicker } from './TaxZoneMapPicker'
 
 interface Props {
   open: boolean
   onOpenChange: (open: boolean) => void
 }
 
+interface PickedPoint {
+  latitude: number
+  longitude: number
+}
+
+const DEFAULT_LATITUDE = 40.74847198283615
+const DEFAULT_LONGITUDE = -73.98567118261157
+const DEFAULT_SUBTOTAL = 100
+
+const DEFAULT_PICKED_POINT: PickedPoint = {
+  latitude: DEFAULT_LATITUDE,
+  longitude: DEFAULT_LONGITUDE,
+}
+
+function formatCoord(value: number) {
+  return value.toFixed(6)
+}
+
+function getLocalDateTimeInputValue(date: Date) {
+  const timezoneOffsetMs = date.getTimezoneOffset() * 60_000
+  return new Date(date.getTime() - timezoneOffsetMs).toISOString().slice(0, 16)
+}
+
+function isValidCoordinatePair(latitude: number, longitude: number) {
+  return (
+    Number.isFinite(latitude) &&
+    Number.isFinite(longitude) &&
+    latitude >= -90 &&
+    latitude <= 90 &&
+    longitude >= -180 &&
+    longitude <= 180
+  )
+}
+
 export function CreateOrderDialog({ open, onOpenChange }: Props) {
   const queryClient = useQueryClient()
   const [serverError, setServerError] = useState<string | null>(null)
+  const [mapOpen, setMapOpen] = useState(false)
+  const [pickedPoint, setPickedPoint] = useState<PickedPoint | null>(DEFAULT_PICKED_POINT)
   const { preview, error: previewError, loading: previewLoading, send, clear } = useTaxPreview()
+  const apiBaseUrl = (import.meta.env.VITE_API_URL ?? 'http://localhost:8000').replace(/\/+$/, '')
 
   const form = useForm<CreateOrderFormValues>({
     resolver: zodResolver(createOrderSchema),
     defaultValues: {
-      latitude: undefined as unknown as number,
-      longitude: undefined as unknown as number,
-      subtotal: undefined as unknown as number,
-      timestamp: new Date().toISOString().slice(0, 16),
+      latitude: DEFAULT_LATITUDE,
+      longitude: DEFAULT_LONGITUDE,
+      subtotal: DEFAULT_SUBTOTAL,
+      timestamp: getLocalDateTimeInputValue(new Date()),
     },
   })
 
@@ -66,8 +105,31 @@ export function CreateOrderDialog({ open, onOpenChange }: Props) {
       form.reset()
       clear()
       setServerError(null)
+      setMapOpen(false)
+      setPickedPoint(DEFAULT_PICKED_POINT)
     }
   }, [open, form, clear])
+
+  const openMapPicker = () => {
+    const latitude = Number(form.getValues('latitude'))
+    const longitude = Number(form.getValues('longitude'))
+    if (isValidCoordinatePair(latitude, longitude)) {
+      setPickedPoint({ latitude, longitude })
+    } else {
+      setPickedPoint(null)
+    }
+    setMapOpen(true)
+  }
+
+  const applyPickedPoint = () => {
+    if (!pickedPoint) return
+    const latitude = Number(pickedPoint.latitude.toFixed(8))
+    const longitude = Number(pickedPoint.longitude.toFixed(8))
+    form.setValue('latitude', latitude, { shouldDirty: true, shouldTouch: true, shouldValidate: true })
+    form.setValue('longitude', longitude, { shouldDirty: true, shouldTouch: true, shouldValidate: true })
+    setMapOpen(false)
+    toast.success('Coordinates selected from map')
+  }
 
   const createMutation = useMutation({
     mutationFn: (data: CreateOrderFormValues) =>
@@ -102,7 +164,7 @@ export function CreateOrderDialog({ open, onOpenChange }: Props) {
             onSubmit={form.handleSubmit((v) => createMutation.mutate(v))}
             className="space-y-4"
           >
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_1fr_auto]">
               <FormField
                 control={form.control}
                 name="latitude"
@@ -147,7 +209,29 @@ export function CreateOrderDialog({ open, onOpenChange }: Props) {
                   </FormItem>
                 )}
               />
+              <div className="flex items-end">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={openMapPicker}
+                      aria-label="Select on map"
+                    >
+                      <MapPin className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Select on map</TooltipContent>
+                </Tooltip>
+              </div>
             </div>
+
+            {pickedPoint && (
+              <p className="text-xs text-muted-foreground">
+                Selected on map: {formatCoord(pickedPoint.latitude)}, {formatCoord(pickedPoint.longitude)}
+              </p>
+            )}
 
             <FormField
               control={form.control}
@@ -243,6 +327,33 @@ export function CreateOrderDialog({ open, onOpenChange }: Props) {
           </form>
         </Form>
       </DialogContent>
+
+      <Dialog open={mapOpen} onOpenChange={setMapOpen}>
+        <DialogContent className="flex h-[82vh] w-[90vw] max-w-6xl flex-col overflow-hidden p-0">
+          <DialogHeader className="border-b border-border px-4 py-3">
+            <DialogTitle>Select Delivery Point On Map</DialogTitle>
+          </DialogHeader>
+
+          <div className="flex min-h-0 flex-1 flex-col px-3 pb-3 pt-2">
+            <div className="min-h-0 flex-1">
+              <TaxZoneMapPicker
+                open={mapOpen}
+                apiBaseUrl={apiBaseUrl}
+                selectedPoint={pickedPoint}
+                onPick={setPickedPoint}
+              />
+            </div>
+            <div className="mt-2 flex items-center justify-end gap-2 border-t border-border pt-2">
+              <Button type="button" variant="outline" onClick={() => setMapOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="button" onClick={applyPickedPoint} disabled={!pickedPoint}>
+                Use selected point
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Dialog>
   )
 }
