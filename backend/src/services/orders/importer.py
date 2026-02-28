@@ -398,13 +398,12 @@ async def _update_file_task_progress(
     failed_rows: int,
     status: str,
 ) -> None:
-    task = await FileTask.get_or_none(id=task_id)
-    if not task:
-        return
-    task.successful_rows = successful_rows
-    task.failed_rows = failed_rows
-    task.status = status
-    await task.save(update_fields=["successful_rows", "failed_rows", "status", "updated_at"])
+    await FileTask.filter(id=task_id).update(
+        successful_rows=successful_rows,
+        failed_rows=failed_rows,
+        status=status,
+        updated_at=datetime.utcnow(),
+    )
 
 
 async def _flush_pending_import_batch(

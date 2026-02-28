@@ -1,7 +1,6 @@
 from dataclasses import dataclass
-from pathlib import Path
+from typing import Iterable
 
-import shapefile
 from pyproj import Transformer
 
 
@@ -16,29 +15,33 @@ class _RegionPolygon:
 class ReportingCodeByCoordinatesService:
     def __init__(
         self,
-        cities_shp_path: Path | None = None,
-        counties_shp_path: Path | None = None,
+        city_polygons: tuple[_RegionPolygon, ...],
+        county_polygons: tuple[_RegionPolygon, ...],
         source_crs: str = "EPSG:4326",
         target_crs: str = "EPSG:26918",
     ) -> None:
-        base_dir = Path(__file__).resolve().parents[2]
-        static_dir = base_dir / "static" / "shapefiles"
-        self._cities_shp_path = cities_shp_path or (static_dir / "Cities.shp")
-        self._counties_shp_path = counties_shp_path or (static_dir / "Counties.shp")
-        if not self._cities_shp_path.exists():
-            raise FileNotFoundError(f"Cities shapefile not found: {self._cities_shp_path}")
-        if not self._counties_shp_path.exists():
-            raise FileNotFoundError(
-                f"Counties shapefile not found: {self._counties_shp_path}"
-            )
-
         self._transformer = Transformer.from_crs(
             crs_from=source_crs,
             crs_to=target_crs,
             always_xy=True,
         )
-        self._city_polygons = self._load_polygons(self._cities_shp_path)
-        self._county_polygons = self._load_polygons(self._counties_shp_path)
+        self._city_polygons = city_polygons
+        self._county_polygons = county_polygons
+
+    @classmethod
+    def from_rows(
+        cls,
+        city_rows: Iterable[dict],
+        county_rows: Iterable[dict],
+        source_crs: str = "EPSG:4326",
+        target_crs: str = "EPSG:26918",
+    ) -> "ReportingCodeByCoordinatesService":
+        return cls(
+            city_polygons=tuple(cls._to_polygon(row) for row in city_rows),
+            county_polygons=tuple(cls._to_polygon(row) for row in county_rows),
+            source_crs=source_crs,
+            target_crs=target_crs,
+        )
 
     def get_reporting_code(self, lat: float, lon: float) -> str | None:
         self._validate_coordinates(lat=lat, lon=lon)
@@ -62,28 +65,23 @@ class ReportingCodeByCoordinatesService:
 
         return None
 
-    def _load_polygons(self, shp_path: Path) -> tuple[_RegionPolygon, ...]:
-        polygons: list[_RegionPolygon] = []
-        reader = shapefile.Reader(str(shp_path))
-        try:
-            for shape_record in reader.iterShapeRecords():
-                raw_code = str(shape_record.record["REP_CODE"]).strip()
-                if not raw_code:
-                    continue
-
-                reporting_code = self._normalize_reporting_code(raw_code)
-                shape = shape_record.shape
-                polygons.append(
-                    _RegionPolygon(
-                        reporting_code=reporting_code,
-                        bbox=tuple(shape.bbox),
-                        points=tuple((float(x), float(y)) for x, y in shape.points),
-                        parts=tuple(int(part) for part in shape.parts),
-                    )
-                )
-        finally:
-            reader.close()
-        return tuple(polygons)
+    @classmethod
+    def _to_polygon(cls, row: dict) -> _RegionPolygon:
+        points_raw = row.get("points") or []
+        parts_raw = row.get("parts") or []
+        points = tuple((float(x), float(y)) for x, y in points_raw)
+        parts = tuple(int(part) for part in parts_raw)
+        return _RegionPolygon(
+            reporting_code=cls._normalize_reporting_code(str(row.get("reporting_code", ""))),
+            bbox=(
+                float(row["bbox_min_lon"]),
+                float(row["bbox_min_lat"]),
+                float(row["bbox_max_lon"]),
+                float(row["bbox_max_lat"]),
+            ),
+            points=points,
+            parts=parts,
+        )
 
     def _find_reporting_code(
         self,
@@ -109,6 +107,8 @@ class ReportingCodeByCoordinatesService:
     @staticmethod
     def _normalize_reporting_code(raw_code: str) -> str:
         value = raw_code.strip()
+        if not value:
+            raise ValueError("Reporting code cannot be empty.")
         if value.isdigit() and len(value) <= 4:
             return value.zfill(4)
         return value

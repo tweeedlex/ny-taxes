@@ -81,6 +81,7 @@ ORDERS_SORT_MAPPING: dict[OrdersSortType, tuple[str, ...]] = {
     "tax_asc": ("tax_amount", "id"),
     "tax_desc": ("-tax_amount", "-id"),
 }
+IMPORT_TASKS_WS_INTERVAL_SECONDS = 0.3
 
 
 @router.post("", response_model=OrderTaxCalculationResponse)
@@ -346,7 +347,7 @@ async def import_tasks_websocket(websocket: WebSocket) -> None:
             tasks = await FileTask.all().order_by("-id")
             payload = [to_file_task_read(task).model_dump(mode="json") for task in tasks]
             await websocket.send_json({"tasks": payload})
-            await asyncio.sleep(0.3)
+            await asyncio.sleep(IMPORT_TASKS_WS_INTERVAL_SECONDS)
     except WebSocketDisconnect:
         return
     except WebSocketException as exc:
