@@ -89,13 +89,14 @@ export function OrderTableRow({
             href={mapsUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-            title={`${order.latitude.toFixed(5)}, ${order.longitude.toFixed(5)}`}
+            className="flex items-start gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+            title={`${order.latitude}, ${order.longitude}`}
           >
-            <MapPin className="w-3.5 h-3.5" />
-            <span className="font-mono text-[10px]">
-              {order.latitude.toFixed(2)}, {order.longitude.toFixed(2)}
-            </span>
+            <MapPin className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+            <div className="flex flex-col font-mono text-[10px] leading-tight text-[10.5px]">
+              <span>{order.latitude}</span>
+              <span>{order.longitude}</span>
+            </div>
           </a>
         </td>
 
