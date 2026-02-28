@@ -146,7 +146,7 @@ function ExpandedFilters({
   reportingCode, timestampFrom, timestampTo, subtotalMin, subtotalMax, onFilterChange,
 }: ExpandedFiltersProps) {
   const fields = [
-    { label: 'Reporting Code', key: 'reporting_code', value: reportingCode, placeholder: 'e.g. NY-NYC-MANH' },
+    { label: 'Reporting Code', key: 'reporting_code', value: reportingCode, placeholder: 'e.g. 8081' },
     { label: 'Date From', key: 'timestamp_from', value: timestampFrom, placeholder: 'YYYY-MM-DD', type: 'date' as const },
     { label: 'Date To', key: 'timestamp_to', value: timestampTo, placeholder: 'YYYY-MM-DD', type: 'date' as const },
     { label: 'Min Subtotal', key: 'subtotal_min', value: subtotalMin, placeholder: '0.00' },

@@ -1,7 +1,9 @@
 import { useState, useCallback, useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useOrders } from './useOrders'
-import type { OrdersFilterParams } from '@/types'
+import type { OrdersFilterParams, OrdersSortOption } from '@/types'
+
+const VALID_SORTS = new Set<OrdersSortOption>(['newest', 'oldest', 'subtotal_asc', 'subtotal_desc', 'tax_asc', 'tax_desc'])
 
 function getParam(sp: URLSearchParams, key: string): string {
   return sp.get(key) ?? ''
@@ -27,6 +29,8 @@ export function useOrdersFilter() {
   const timestampTo = getParam(searchParams, 'timestamp_to')
   const subtotalMin = getParam(searchParams, 'subtotal_min')
   const subtotalMax = getParam(searchParams, 'subtotal_max')
+  const sortRaw = getParam(searchParams, 'sort')
+  const sort: OrdersSortOption = VALID_SORTS.has(sortRaw as OrdersSortOption) ? (sortRaw as OrdersSortOption) : 'newest'
 
   const apiParams = useMemo<OrdersFilterParams>(() => {
     const p: OrdersFilterParams = {
@@ -40,8 +44,9 @@ export function useOrdersFilter() {
     if (timestampTo) p.timestamp_to = timestampTo
     if (subtotalMin) p.subtotal_min = Number(subtotalMin)
     if (subtotalMax) p.subtotal_max = Number(subtotalMax)
+    if (sort !== 'newest') p.sort = sort
     return p
-  }, [page, pageSize, search, reportingCode, timestampFrom, timestampTo, subtotalMin, subtotalMax])
+  }, [page, pageSize, search, reportingCode, timestampFrom, timestampTo, subtotalMin, subtotalMax, sort])
 
   const { data, isLoading, refetch } = useOrders(apiParams)
 
@@ -81,6 +86,11 @@ export function useOrdersFilter() {
     [updateParams],
   )
 
+  const setSort = useCallback(
+    (v: OrdersSortOption) => updateParams({ sort: v === 'newest' ? undefined : v, page: undefined }),
+    [updateParams],
+  )
+
   const setFilter = useCallback(
     (key: string, v: string) => updateParams({ [key]: v || undefined, page: undefined }),
     [updateParams],
@@ -102,6 +112,8 @@ export function useOrdersFilter() {
     setShowFilters,
     expandedId,
     toggleExpanded,
+    sort,
+    setSort,
     orders,
     total,
     totalPages,

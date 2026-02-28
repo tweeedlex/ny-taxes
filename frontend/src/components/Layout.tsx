@@ -27,7 +27,7 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   {to: '/orders', icon: ShoppingCart, label: 'Orders'},
-  {to: '/import', icon: Upload, label: 'CSV Import'},
+  {to: '/import', icon: Upload, label: 'CSV Import', authority: 'edit_orders'},
   {to: '/stats', icon: BarChart3, label: 'Statistics'},
   {to: '/users', icon: Users, label: 'Users', authority: 'read_users'},
 ]

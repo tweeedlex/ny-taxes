@@ -32,11 +32,18 @@ export default function OrdersPage() {
           onFilterChange={filter.setFilter}
         />
         <div className="px-4 lg:px-8 pb-8 flex-1 min-w-0 w-full">
+          <Pagination
+            page={filter.page}
+            totalPages={filter.totalPages}
+            onPageChange={filter.setPage}
+          />
           <OrdersTable
             orders={filter.orders}
             expandedId={filter.expandedId}
             onToggleExpand={filter.toggleExpanded}
             loading={filter.isLoading}
+            sort={filter.sort}
+            onSortChange={filter.setSort}
           />
           <Pagination
             page={filter.page}
