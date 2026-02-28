@@ -30,7 +30,10 @@
       "Bash(git push:*)",
       "Bash(npm run:*)",
       "Bash(xargs grep:*)",
-      "Bash(npx eslint:*)"
+      "Bash(npx eslint:*)",
+      "Bash(npm install:*)",
+      "mcp__playwright__browser_fill_form",
+      "mcp__playwright__browser_close"
     ]
   },
   "hooks": {

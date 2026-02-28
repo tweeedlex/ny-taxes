@@ -1,11 +1,13 @@
-import { api, buildQueryString } from './api'
+import { api, buildQueryString, BASE_URL } from './api'
 import type {
+  CoordinateStreamParams,
   FileTask,
   LoginRequest,
   OrderCreateRequest,
   OrdersFilterParams,
   OrdersListResponse,
   OrdersStatsResponse,
+  OrdersStatsSummaryResponse,
   OrderTaxCalculationResponse,
   RegisterRequest,
   User,
@@ -31,6 +33,21 @@ export const ordersApi = {
     api.get<OrdersStatsResponse>(
       `/orders/stats${buildQueryString({ from_date, to_date })}`,
     ),
+
+  statsSummary: (from_date?: string, to_date?: string) =>
+    api.get<OrdersStatsSummaryResponse>(
+      `/orders/stats${buildQueryString({ from_date, to_date })}`,
+    ),
+
+  statsDaily: (from_date: string, to_date: string) =>
+    api.get<OrdersStatsResponse>(
+      `/orders/stats/daily${buildQueryString({ from_date, to_date })}`,
+    ),
+
+  streamCoordinates: (params?: CoordinateStreamParams) =>
+    fetch(`${BASE_URL}/orders/stream/coordinates${buildQueryString({ ...params })}`, {
+      credentials: 'include',
+    }),
 
   importCsv: (file: File) =>
     api.uploadFile<{ task: FileTask }>('/orders/import', file),

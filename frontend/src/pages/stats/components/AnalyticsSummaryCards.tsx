@@ -1,17 +1,19 @@
 import { Package, DollarSign, TrendingUp, Percent } from 'lucide-react'
-import { StatCard } from './StatCard'
-import { useOrdersStatsSummary } from '../hooks/useOrdersStatsSummary'
+import { StatCard } from '@/pages/orders/components/StatCard'
+import type { OrdersStatsResponse } from '@/types'
 
-export function StatsRow() {
-  const { data } = useOrdersStatsSummary()
+interface Props {
+  data: OrdersStatsResponse | undefined
+}
 
+export function AnalyticsSummaryCards({ data }: Props) {
   const totalOrders = data?.total_orders ?? 0
-  const totalRevenue = data?.total_revenue ?? 0
-  const totalTax = data?.total_tax ?? 0
-  const avgRate = data?.average_tax_percent ?? 0
+  const totalRevenue = data?.total_amount ?? 0
+  const totalTax = data?.total_tax_amount ?? 0
+  const avgRate = totalRevenue > 0 ? (totalTax / totalRevenue) * 100 : 0
 
   return (
-    <div className="px-4 lg:px-8 py-6 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
       <StatCard
         label="Total Orders"
         value={totalOrders}
@@ -28,7 +30,7 @@ export function StatsRow() {
         delay={0.1}
       />
       <StatCard
-        label="Tax Collected"
+        label="Total Tax"
         value={totalTax}
         prefix="$"
         icon={TrendingUp}
