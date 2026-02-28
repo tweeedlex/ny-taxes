@@ -13,7 +13,6 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import {
   Form,
   FormControl,
@@ -209,21 +208,16 @@ export function CreateOrderDialog({ open, onOpenChange }: Props) {
                   </FormItem>
                 )}
               />
-              <div className="flex items-end">
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon"
-                      onClick={openMapPicker}
-                      aria-label="Select on map"
-                    >
-                      <MapPin className="h-4 w-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Select on map</TooltipContent>
-                </Tooltip>
+              <div className="flex items-end col-span-full sm:col-span-1">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full sm:w-auto gap-1.5"
+                  onClick={openMapPicker}
+                >
+                  <MapPin className="h-4 w-4 shrink-0" />
+                  <span>Pick on map</span>
+                </Button>
               </div>
             </div>
 

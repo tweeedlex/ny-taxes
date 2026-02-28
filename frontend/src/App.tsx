@@ -1,7 +1,9 @@
 import { BrowserRouter, Route, Routes, Navigate } from 'react-router-dom'
 import Layout from '@/components/Layout'
 import ProtectedRoute from '@/components/ProtectedRoute'
+import { Restrict } from '@/components/Restrict'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
+import { AUTHORITIES } from '@/constants/authorities'
 import LoginPage from '@/pages/auth/LoginPage'
 import RegisterPage from '@/pages/auth/RegisterPage'
 import OrdersPage from '@/pages/orders/OrdersPage'
@@ -22,9 +24,17 @@ export default function App() {
             <Route element={<Layout />}>
               <Route path="/" element={<Navigate to="/orders" replace />} />
               <Route path="/orders" element={<OrdersPage />} />
-              <Route path="/orders/import" element={<ImportPage />} />
+              <Route path="/import" element={
+                <Restrict authorities={[AUTHORITIES.EDIT_ORDERS]} fallback={<Navigate to="/orders" replace />}>
+                  <ImportPage />
+                </Restrict>
+              } />
               <Route path="/stats" element={<StatsPage />} />
-              <Route path="/users" element={<UsersPage />} />
+              <Route path="/users" element={
+                <Restrict authorities={[AUTHORITIES.READ_USERS]} fallback={<Navigate to="/orders" replace />}>
+                  <UsersPage />
+                </Restrict>
+              } />
             </Route>
           </Route>
 

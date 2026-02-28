@@ -37,8 +37,6 @@ interface StatCardProps {
   prefix?: string;
   suffix?: string;
   icon: React.ElementType;
-  subtitle?: string;
-  trend?: string;
   delay?: number;
   accent?: Accent;
 }
@@ -49,8 +47,6 @@ export function StatCard({
   prefix = "",
   suffix = "",
   icon: Icon,
-  subtitle,
-  trend = "+12.4%",
   delay = 0,
   accent = "amber",
 }: StatCardProps) {
@@ -81,7 +77,7 @@ export function StatCard({
 
             <CountUp
               to={value}
-              duration={1.6}
+              duration={0.15}
               delay={delay}
               separator=","
               className="text-[26px] font-bold text-foreground tabular-nums leading-none"

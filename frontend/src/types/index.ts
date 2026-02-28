@@ -91,6 +91,8 @@ export interface OrderCreateRequest {
   timestamp: string
 }
 
+export type OrdersSortOption = 'newest' | 'oldest' | 'subtotal_asc' | 'subtotal_desc' | 'tax_asc' | 'tax_desc'
+
 export interface OrdersFilterParams {
   limit?: number
   offset?: number
@@ -99,6 +101,7 @@ export interface OrdersFilterParams {
   timestamp_to?: string
   subtotal_min?: number
   subtotal_max?: number
+  sort?: OrdersSortOption
 }
 
 export interface UserCreateRequest {

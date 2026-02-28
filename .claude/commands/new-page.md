@@ -41,7 +41,7 @@ frontend/src/pages/<name>/
 
 1. Open `frontend/src/App.tsx` and replace the stub `<div>` placeholder for this route with `<NamePage />`. Add the import.
 2. If the page is NOT yet listed in `App.tsx` routes, add a new `<Route>` under the `<Route element={<Layout />}>` group.
-3. If the page is NOT yet listed in `NAV_ITEMS` in `frontend/src/components/Layout.tsx`, add an entry with an appropriate lucide-react icon and label. Available routes already in the nav: `/orders`, `/orders/import`, `/stats`, `/users`.
+3. If the page is NOT yet listed in `NAV_ITEMS` in `frontend/src/components/Layout.tsx`, add an entry with an appropriate lucide-react icon and label. Available routes already in the nav: `/orders`, `/import`, `/stats`, `/users`.
 
 ## Constraints
 - Match the neutral theme: no amber/emerald color classes; use `text-foreground`, `text-muted-foreground`, `bg-secondary`, `bg-primary`, zinc scale for decorative elements

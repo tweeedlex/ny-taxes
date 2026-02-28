@@ -1,14 +1,8 @@
 import React from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Percent } from "lucide-react";
+import { Percent, MapPin } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { ExpandedOrderRow } from "./ExpandedOrderRow";
-import { TaxBreakdownTooltip } from "./TaxBreakdownTooltip";
 import { formatMoney, formatDate, formatTime } from "../utils/formatters";
 import type { Order } from "@/types";
 
@@ -27,6 +21,8 @@ export function OrderTableRow({
   isExpanded,
   onToggle,
 }: OrderTableRowProps) {
+  const mapsUrl = `https://www.google.com/maps?q=${order.latitude},${order.longitude}`;
+
   return (
     <React.Fragment>
       <motion.tr
@@ -87,6 +83,22 @@ export function OrderTableRow({
           </Badge>
         </td>
 
+        {/* Coordinates */}
+        <td className="px-2 lg:px-4 py-3" onClick={(e) => e.stopPropagation()}>
+          <a
+            href={mapsUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+            title={`${order.latitude.toFixed(5)}, ${order.longitude.toFixed(5)}`}
+          >
+            <MapPin className="w-3.5 h-3.5" />
+            <span className="font-mono text-[10px]">
+              {order.latitude.toFixed(2)}, {order.longitude.toFixed(2)}
+            </span>
+          </a>
+        </td>
+
         {/* Subtotal */}
         <td className="px-2 lg:px-4 py-3">
           <span className="text-xs font-semibold text-foreground">
@@ -114,42 +126,6 @@ export function OrderTableRow({
           <span className="text-xs font-bold text-foreground">
             {formatMoney(order.total_amount)}
           </span>
-        </td>
-
-        {/* Breakdown */}
-        <td className="px-2 lg:px-4 py-3" onClick={(e) => e.stopPropagation()}>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                className="flex items-center gap-0.5 text-muted-foreground/40 hover:text-muted-foreground transition-colors"
-                onClick={(e) => e.stopPropagation()}
-              >
-                {[
-                  order.breakdown.state_rate,
-                  order.breakdown.county_rate,
-                  order.breakdown.city_rate,
-                  order.breakdown.special_rates,
-                ].map((rate, i) => (
-                  <div
-                    key={i}
-                    className="w-3.5 h-3.5 rounded-sm"
-                    style={{
-                      background:
-                        rate > 0
-                          ? `rgba(161,161,170,${0.2 + i * 0.2})`
-                          : "rgba(255,255,255,0.04)",
-                    }}
-                  />
-                ))}
-              </button>
-            </TooltipTrigger>
-            <TooltipContent
-              side="left"
-              className="p-3 bg-background border-border"
-            >
-              <TaxBreakdownTooltip order={order} />
-            </TooltipContent>
-          </Tooltip>
         </td>
       </motion.tr>
 
