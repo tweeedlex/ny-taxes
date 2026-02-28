@@ -13,6 +13,7 @@ from fastapi import (
     File,
     HTTPException,
     Query,
+    Request,
     UploadFile,
     WebSocket,
     WebSocketDisconnect,
@@ -123,6 +124,7 @@ async def calculate_order_tax(
 
 @router.post("/import", response_model=OrderImportTaskCreateResponse)
 async def import_orders_csv(
+    request: Request,
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     current_user: User = Depends(require_authority(EDIT_ORDERS)),
@@ -159,7 +161,8 @@ async def import_orders_csv(
         storage,
         reporting_code_service,
         tax_rate_service,
-        content,
+        None,
+        request.app.state.redis_client,
     )
     return OrderImportTaskCreateResponse(task=to_file_task_read(task))
 

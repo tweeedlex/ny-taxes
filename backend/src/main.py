@@ -27,6 +27,7 @@ async def lifespan(app: FastAPI):
         decode_responses=True,
     )
     await redis_client.ping()
+    app.state.redis_client = redis_client
     app.state.session_manager = SessionManager(
         redis=redis_client,
         key_prefix=settings.session_key_prefix,
@@ -44,6 +45,7 @@ async def lifespan(app: FastAPI):
         storage=app.state.storage,
         reporting_code_service=app.state.reporting_code_service,
         tax_rate_service=app.state.tax_rate_service,
+        redis_client=app.state.redis_client,
     )
 
     try:
