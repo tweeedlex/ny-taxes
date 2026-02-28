@@ -28,10 +28,9 @@ export const createUserSchema = z.object({
 
   full_name: z.string().optional(),
 
-  is_active: z.boolean(),
+  is_active: z.boolean().default(true),
 
-  // важное: хотя бы одна роль
-  authorities: z.array(authorityEnum).min(1, "Select at least one authority"),
+  authorities: z.array(authorityEnum).default([]),
 });
 
 export type CreateUserFormValues = z.infer<typeof createUserSchema>;
