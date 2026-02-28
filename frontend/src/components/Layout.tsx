@@ -17,6 +17,16 @@ import { ThemeToggle } from './ThemeToggle'
 import { useAuthStore } from '@/store/auth.store'
 import { authApi } from '@/lib/endpoints'
 import toast from 'react-hot-toast'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 
 interface NavItem {
   to: string
@@ -49,6 +59,7 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
   const navigate = useNavigate()
   const user = useAuthStore((s) => s.user)
   const clearUser = useAuthStore((s) => s.clearUser)
+  const [logoutOpen, setLogoutOpen] = useState(false)
 
   const handleLogout = async () => {
     try {
@@ -126,14 +137,32 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
           </div>
           <button
             className="p-1.5 rounded-md text-muted-foreground/50 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
-
-
-            onClick={handleLogout}
+            onClick={() => setLogoutOpen(true)}
           >
             <LogOut className="w-3.5 h-3.5" />
           </button>
         </div>
       </div>
+
+      <AlertDialog open={logoutOpen} onOpenChange={setLogoutOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Sign out?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to sign out of your account?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleLogout}
+              className="bg-rose-600 hover:bg-rose-700 text-white focus-visible:ring-rose-500"
+            >
+              Sign out
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
