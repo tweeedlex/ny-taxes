@@ -20,7 +20,7 @@ export default function StatsPage() {
 
   const [fromDate, setFromDate] = useState(defaultFrom)
   const [toDate, setToDate] = useState(defaultTo)
-  const [mapFilters, setMapFilters] = useState<CoordinateStreamParams>({})
+  const [appliedFilters, setAppliedFilters] = useState<CoordinateStreamParams>({})
 
   const { data, isLoading } = useOrdersStatsDaily(fromDate, toDate)
 
@@ -75,8 +75,8 @@ export default function StatsPage() {
           </TabsContent>
 
           <TabsContent value="map" className="space-y-6 mt-0">
-            <MapFilters filters={mapFilters} onChange={setMapFilters} />
-            <OrdersMap filters={mapFilters} enabled={tab === 'map'} />
+            <MapFilters onApply={setAppliedFilters} />
+            <OrdersMap filters={appliedFilters} enabled={tab === 'map'} />
           </TabsContent>
         </Tabs>
       </div>

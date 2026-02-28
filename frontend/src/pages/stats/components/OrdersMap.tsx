@@ -115,8 +115,8 @@ export function OrdersMap({ filters, enabled }: Props) {
         radius: 4,
         color: '#ffffff',
         weight: 1,
-        fillColor: '#a1a1aa',
-        fillOpacity: 0.7,
+        fillColor: '#22c55e',
+        fillOpacity: 0.8,
       }).addTo(markersLayerRef.current)
     }
   }, [points])
