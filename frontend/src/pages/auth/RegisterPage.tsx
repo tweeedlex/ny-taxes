@@ -37,7 +37,7 @@ export default function RegisterPage() {
         password: values.password,
         full_name: values.full_name || null,
       })
-      toast.success('Account created! Please sign in.')
+      toast.success('Account created! Wait for admin approval, then sign in.')
       navigate('/login')
     } catch (err) {
       if (err instanceof ApiError) {

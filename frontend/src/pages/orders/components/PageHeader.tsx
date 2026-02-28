@@ -3,9 +3,11 @@ import { Package, Download, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { CreateOrderDialog } from './CreateOrderDialog'
+import { useNavigate } from "react-router-dom";
 
 export function PageHeader() {
   const [createOpen, setCreateOpen] = useState(false)
+  const navigate = useNavigate();
 
   return (
     <div className="border-b border-border">
@@ -31,12 +33,13 @@ export function PageHeader() {
                 variant="outline"
                 size="sm"
                 className="h-8 gap-1.5 text-zinc-400 border-zinc-700 hover:border-zinc-600 hover:text-foreground bg-transparent"
+                onClick={() => navigate('/orders/import')}
               >
                 <Download className="w-3.5 h-3.5" />
-                Export
+                Import
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Export orders as CSV</TooltipContent>
+            <TooltipContent>Import orders from CSV</TooltipContent>
           </Tooltip>
           <Button
             size="sm"
