@@ -72,6 +72,35 @@ Results are checked against [NYS Jurisdiction/Rate Lookup](https://www8.tax.ny.g
   - `edit_users`
   - `read_orders`
   - `edit_orders`
+
+## User Approval & Authorities
+
+### Registration Flow
+
+Any user can self-register via `POST /auth/register`, but a newly registered account has **no authorities** by default — it is effectively locked out of all protected endpoints.
+
+An admin (a user with `edit_users` authority) must go to the **Users** page and:
+
+1. Set `is_active = true` to unblock the account.
+2. Assign the appropriate authorities.
+
+Until that happens, the user can log in but cannot access any data.
+
+### Authorities
+
+Authorities are a plain string array on the `User` model. The full set:
+
+| Authority | What it grants |
+|---|---|
+| `read_orders` | View orders list, stats, map, CSV import task list |
+| `edit_orders` | Create orders, upload CSV imports |
+| `read_users` | View the Users page and individual user records |
+| `edit_users` | Create, edit, delete users; assign authorities |
+
+> Sidebar navigation items are filtered client-side based on the current user's authorities.  
+> Route-level guards (`<Restrict>`) also enforce authority checks and redirect unauthorized users.
+
+
 - Postgres + Tortoise ORM.
 - CSV import files stored in MinIO.
 - Static files served from `backend/src/static` (`index.html`, `map.html`).
