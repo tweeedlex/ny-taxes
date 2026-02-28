@@ -13,6 +13,7 @@ from fastapi import (
     File,
     HTTPException,
     Query,
+    Request,
     UploadFile,
     WebSocket,
     WebSocketDisconnect,
@@ -81,6 +82,7 @@ ORDERS_SORT_MAPPING: dict[OrdersSortType, tuple[str, ...]] = {
     "tax_asc": ("tax_amount", "id"),
     "tax_desc": ("-tax_amount", "-id"),
 }
+IMPORT_TASKS_WS_INTERVAL_SECONDS = 0.3
 
 
 @router.post("", response_model=OrderTaxCalculationResponse)
@@ -122,6 +124,7 @@ async def calculate_order_tax(
 
 @router.post("/import", response_model=OrderImportTaskCreateResponse)
 async def import_orders_csv(
+    request: Request,
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     current_user: User = Depends(require_authority(EDIT_ORDERS)),
@@ -158,7 +161,8 @@ async def import_orders_csv(
         storage,
         reporting_code_service,
         tax_rate_service,
-        content,
+        None,
+        request.app.state.redis_client,
     )
     return OrderImportTaskCreateResponse(task=to_file_task_read(task))
 
@@ -346,7 +350,7 @@ async def import_tasks_websocket(websocket: WebSocket) -> None:
             tasks = await FileTask.all().order_by("-id")
             payload = [to_file_task_read(task).model_dump(mode="json") for task in tasks]
             await websocket.send_json({"tasks": payload})
-            await asyncio.sleep(0.3)
+            await asyncio.sleep(IMPORT_TASKS_WS_INTERVAL_SECONDS)
     except WebSocketDisconnect:
         return
     except WebSocketException as exc:

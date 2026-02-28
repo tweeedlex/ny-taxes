@@ -49,6 +49,13 @@ class MinioStorage:
             response.close()
             response.release_conn()
 
+    def get_object_stream(self, object_name: str):
+        return self._client.get_object(self._bucket, object_name)
+
+    def download_object_to_file(self, object_name: str, file_path: str) -> str:
+        self._client.fget_object(self._bucket, object_name, file_path)
+        return file_path
+
     def object_url(self, object_name: str) -> str:
         encoded_segments = [quote(segment, safe="") for segment in object_name.split("/")]
         encoded_object = "/".join(encoded_segments)

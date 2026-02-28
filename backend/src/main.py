@@ -14,7 +14,7 @@ from src.core.database import close_db, init_db
 from src.core.sessions import SessionManager
 from src.core.storage import MinioStorage
 from src.services.orders import resume_in_progress_import_tasks
-from src.services.tax import TaxRateByReportingCodeService, ReportingCodeByCoordinatesService
+from src.services.tax import build_tax_services_from_database
 
 
 @asynccontextmanager
@@ -27,6 +27,7 @@ async def lifespan(app: FastAPI):
         decode_responses=True,
     )
     await redis_client.ping()
+    app.state.redis_client = redis_client
     app.state.session_manager = SessionManager(
         redis=redis_client,
         key_prefix=settings.session_key_prefix,
@@ -34,14 +35,17 @@ async def lifespan(app: FastAPI):
     )
     app.state.storage = MinioStorage()
     app.state.storage.ensure_bucket()
-    app.state.reporting_code_service = ReportingCodeByCoordinatesService()
-    app.state.tax_rate_service = TaxRateByReportingCodeService()
+    (
+        app.state.reporting_code_service,
+        app.state.tax_rate_service,
+    ) = await build_tax_services_from_database()
 
     await ensure_bootstrap_admin()
     app.state.import_workers = await resume_in_progress_import_tasks(
         storage=app.state.storage,
         reporting_code_service=app.state.reporting_code_service,
         tax_rate_service=app.state.tax_rate_service,
+        redis_client=app.state.redis_client,
     )
 
     try:

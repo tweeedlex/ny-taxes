@@ -76,15 +76,27 @@ Results are checked against [NYS Jurisdiction/Rate Lookup](https://www8.tax.ny.g
 - CSV import files stored in MinIO.
 - Static files served from `backend/src/static` (`index.html`, `map.html`).
 
+### Runtime Data Evolution (File -> DB)
+
+At first, tax calculation loaded spatial data and tax rates directly from files on disk:
+- `backend/src/static/shapefiles/*.shp`
+- `backend/src/static/ny_tax_rates.json`
+
+That worked functionally, but it was not optimal operationally at scale.  
+Current runtime uses PostgreSQL as the primary source for tax engine data:
+- `tax_regions` table for city/county polygons + bounding boxes + geometry parts
+- `tax_rates` table for reporting-code jurisdictions payload
+
+On startup, backend seeds these tables from static files only if tables are empty, then serves calculations from DB-backed in-memory caches.
+This reduces direct file dependency in request-time logic and makes data lifecycle more manageable.
+
 ## Tax Engine Logic (Actual Runtime)
 
 1. Validate payload and coordinates.
 2. Validate timestamp date is not earlier than `2025-03-01`.
-3. Find reporting code by coordinates:
-   - `backend/src/static/shapefiles/Cities.shp`
-   - fallback: `backend/src/static/shapefiles/Counties.shp`
+3. Find reporting code by coordinates using `tax_regions` (city first, then county).
 4. If not found -> `422` (`outside New York State coverage`).
-5. Load rates from `backend/src/static/ny_tax_rates.json`.
+5. Load rates by reporting code from `tax_rates`.
 6. Compute and return totals and breakdown.
 
 ## Tax Rates JSON Format (Current)
@@ -179,8 +191,9 @@ Important env vars for compose:
 ### Orders
 
 - `POST /orders` (`edit_orders`) - calculates tax and persists order.
-- `GET /orders` (`read_orders`) - pagination + filters (`reporting_code`, `timestamp_from`, `timestamp_to`, `subtotal_min`, `subtotal_max`).
-- `GET /orders/stats` (`read_orders`) - `from_date`, `to_date` (`YYYY.MM.DD`), aggregation by `timestamp`.
+- `GET /orders` (`read_orders`) - pagination + filters (`reporting_code`, `timestamp_from`, `timestamp_to`, `subtotal_min`, `subtotal_max`) + sort (`newest`, `oldest`, `subtotal_asc`, `subtotal_desc`, `tax_asc`, `tax_desc`).
+- `GET /orders/stats` (`read_orders`) - summary stats with optional `from`, `to` (`YYYY-MM-DD`).
+- `GET /orders/stats/daily` (`read_orders`) - daily stats with `from_date`, `to_date` (`YYYY.MM.DD`), aggregation by `timestamp`.
 
 ### Import
 
@@ -214,7 +227,8 @@ Applied in:
 - `WS /orders/tax/ws` (`timestamp`)
 - `POST /orders/import` (row `timestamp`)
 - `GET /orders` (`timestamp_from`, `timestamp_to`)
-- `GET /orders/stats` (`from_date`, `to_date`)
+- `GET /orders/stats` (`from`, `to`)
+- `GET /orders/stats/daily` (`from_date`, `to_date`)
 
 ## Persistence Model
 

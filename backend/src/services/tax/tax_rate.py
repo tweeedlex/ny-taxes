@@ -1,6 +1,4 @@
-import json
 from dataclasses import dataclass
-from pathlib import Path
 
 
 JurisdictionRateItem = dict[str, str | float]
@@ -19,15 +17,23 @@ class TaxRateBreakdown:
 
 
 class TaxRateByReportingCodeService:
-    def __init__(self, rates_path: Path | None = None) -> None:
-        base_dir = Path(__file__).resolve().parents[2]
-        self._rates_path = rates_path or (base_dir / "static" / "ny_tax_rates.json")
-        if not self._rates_path.exists():
-            raise FileNotFoundError(f"Tax rates file not found: {self._rates_path}")
-        self._rates_by_code = self._load_rates()
+    def __init__(self, rates_by_code: dict[str, JurisdictionsPayload]) -> None:
+        self._rates_by_code = rates_by_code
+
+    @classmethod
+    def from_rows(cls, rows: list[dict]) -> "TaxRateByReportingCodeService":
+        rates_by_code: dict[str, JurisdictionsPayload] = {}
+        for row in rows:
+            code = cls.normalize_reporting_code(str(row.get("reporting_code", "")))
+            jurisdictions = cls.parse_rate_payload(
+                raw_payload=row.get("jurisdictions"),
+                code=code,
+            )
+            rates_by_code[code] = jurisdictions
+        return cls(rates_by_code=rates_by_code)
 
     def get_tax_rate_breakdown(self, reporting_code: str) -> TaxRateBreakdown | None:
-        normalized_code = self._normalize_reporting_code(reporting_code)
+        normalized_code = self.normalize_reporting_code(reporting_code)
         payload = self._rates_by_code.get(normalized_code)
         if payload is None:
             return None
@@ -48,18 +54,8 @@ class TaxRateByReportingCodeService:
             composite_tax_rate=composite_tax_rate,
         )
 
-    def _load_rates(self) -> dict[str, JurisdictionsPayload]:
-        raw = json.loads(self._rates_path.read_text(encoding="utf-8"))
-        if not isinstance(raw, dict):
-            raise ValueError("Tax rates JSON root must be an object.")
-
-        rates_by_code: dict[str, JurisdictionsPayload] = {}
-        for raw_code, raw_payload in raw.items():
-            code = self._normalize_reporting_code(str(raw_code))
-            rates_by_code[code] = self._parse_rate_payload(raw_payload, code)
-        return rates_by_code
-
-    def _parse_rate_payload(self, raw_payload: object, code: str) -> JurisdictionsPayload:
+    @classmethod
+    def parse_rate_payload(cls, raw_payload: object, code: str) -> JurisdictionsPayload:
         if not isinstance(raw_payload, dict):
             raise ValueError(f"Invalid tax payload for reporting_code={code}.")
 
@@ -67,14 +63,10 @@ class TaxRateByReportingCodeService:
         payload_keys = set(raw_payload.keys())
         missing = [key for key in categories if key not in raw_payload]
         if missing:
-            raise ValueError(
-                f"Missing sections {missing} for reporting_code={code}."
-            )
+            raise ValueError(f"Missing sections {missing} for reporting_code={code}.")
         unknown = sorted(payload_keys.difference(categories))
         if unknown:
-            raise ValueError(
-                f"Unknown sections {unknown} for reporting_code={code}."
-            )
+            raise ValueError(f"Unknown sections {unknown} for reporting_code={code}.")
 
         result: JurisdictionsPayload = {}
         for category in categories:
@@ -83,11 +75,16 @@ class TaxRateByReportingCodeService:
                 raise ValueError(
                     f"Tax payload section '{category}' must be an array for reporting_code={code}."
                 )
-            result[category] = self._parse_rate_items(items=section, code=code, category=category)
+            result[category] = cls._parse_rate_items(
+                items=section,
+                code=code,
+                category=category,
+            )
         return result
 
+    @classmethod
     def _parse_rate_items(
-        self,
+        cls,
         items: list[object],
         code: str,
         category: str,
@@ -118,7 +115,7 @@ class TaxRateByReportingCodeService:
         return sum(float(item["rate"]) for item in items)
 
     @staticmethod
-    def _normalize_reporting_code(raw_code: str) -> str:
+    def normalize_reporting_code(raw_code: str) -> str:
         value = raw_code.strip()
         if not value:
             raise ValueError("Reporting code cannot be empty.")
