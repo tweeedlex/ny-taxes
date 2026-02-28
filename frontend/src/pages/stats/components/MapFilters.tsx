@@ -37,7 +37,7 @@ export function MapFilters({ filters, onChange }: Props) {
           Reporting Code
         </label>
         <Input
-          placeholder="e.g. NY001"
+          placeholder="e.g. 8081"
           value={filters.reporting_code ?? ''}
           onChange={(e) => update({ reporting_code: e.target.value || undefined })}
           className="h-8 text-xs w-32 bg-card border-border text-foreground"
