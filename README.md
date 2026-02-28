@@ -1,6 +1,6 @@
 # New York Sales Tax by Delivery Location (Geo-Based Engine)
 
-[Live Demo] (https://ny.artemka1806.dev)
+[Live Demo](https://ny.artemka1806.dev)
 
 This monorepo implements a New York State (NYS) sales tax system that calculates tax by delivery coordinates.
 
