@@ -3,7 +3,13 @@ import { Users } from 'lucide-react'
 import { UserTableRow } from './UserTableRow'
 import type { User } from '@/types'
 
-const COLUMNS = [
+interface IColumn {
+  label: string
+  w: string
+  hidden?: string
+}
+
+const COLUMNS: IColumn[] = [
   { label: 'User', w: 'min-w-[320px]' },
   { label: 'Login', w: 'min-w-[160px]' },
   { label: 'Authorities', w: 'min-w-[360px]' },
