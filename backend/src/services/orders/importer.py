@@ -15,6 +15,7 @@ from urllib.parse import unquote, urlsplit
 from redis.asyncio import Redis
 
 from src.core.date_rules import ensure_min_supported_datetime
+from src.core.reporting_code import normalize_reporting_code
 from src.core.storage import MinioStorage
 from src.models.file_task import FileTask
 from src.models.order import Order
@@ -86,7 +87,7 @@ class _RedisBackedTaxRateService:
         redis_rows = await redis_client.hgetall(TAX_RATE_CACHE_HASH_KEY)
         for raw_code, raw_payload in redis_rows.items():
             try:
-                code = base_service.normalize_reporting_code(str(raw_code))
+                code = normalize_reporting_code(str(raw_code))
                 payload = json.loads(raw_payload)
                 jurisdictions = base_service.parse_rate_payload(payload, code)
                 cached_breakdowns[code] = _build_breakdown_from_jurisdictions(
@@ -98,7 +99,7 @@ class _RedisBackedTaxRateService:
         return cls(base_service=base_service, cached_breakdowns=cached_breakdowns)
 
     def get_tax_rate_breakdown(self, reporting_code: str) -> TaxRateBreakdown | None:
-        normalized_code = self._base_service.normalize_reporting_code(reporting_code)
+        normalized_code = normalize_reporting_code(reporting_code)
         with self._lock:
             cached = self._cached_breakdowns.get(normalized_code)
         if cached is not None:

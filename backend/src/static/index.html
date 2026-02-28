@@ -220,8 +220,27 @@
         </div>
         <button type="submit">Get stats</button>
       </form>
+
+      <form id="ordersStreamForm">
+        <div class="row">
+          <label>Reporting code <input name="reporting_code" /></label>
+          <label>Timestamp from <input name="timestamp_from" placeholder="2025-11-01T00:00:00Z" /></label>
+          <label>Timestamp to <input name="timestamp_to" placeholder="2025-11-30T23:59:59Z" /></label>
+          <label>Subtotal min <input name="subtotal_min" /></label>
+          <label>Subtotal max <input name="subtotal_max" /></label>
+          <label>Max rows to read <input name="max_rows" type="number" value="25" min="1" max="1000" /></label>
+        </div>
+        <div class="inline">
+          <button type="submit">Start stream</button>
+          <button id="ordersStreamStopBtn" type="button" class="secondary">Stop stream</button>
+        </div>
+        <p class="muted">
+          Endpoint: <code>GET /orders/stream/coordinates</code> (NDJSON: one line = one JSON with <code>{ "lat", "lon" }</code>).
+        </p>
+      </form>
     </div>
     <pre id="ordersOut">No data</pre>
+    <pre id="ordersStreamOut">Stream is idle</pre>
   </section>
 
   <section class="card">
@@ -248,11 +267,13 @@
     auth: document.getElementById("authOut"),
     users: document.getElementById("usersOut"),
     orders: document.getElementById("ordersOut"),
+    stream: document.getElementById("ordersStreamOut"),
     imp: document.getElementById("importOut"),
     ws: document.getElementById("wsOut"),
   };
 
   let ws = null;
+  let ordersStreamAbortController = null;
 
   function show(el, data) {
     if (typeof data === "string") {
@@ -434,6 +455,93 @@
     });
     try { show(out.orders, await api(`/orders/stats/daily?${q}`)); }
     catch (err) { show(out.orders, err); }
+  });
+
+  document.getElementById("ordersStreamForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const q = new URLSearchParams();
+    const names = ["reporting_code", "timestamp_from", "timestamp_to", "subtotal_min", "subtotal_max"];
+    for (const n of names) {
+      const v = getFormValue(form, n);
+      if (v) q.set(n, v);
+    }
+    const maxRows = Number(getFormValue(form, "max_rows") || "25");
+
+    if (ordersStreamAbortController) {
+      ordersStreamAbortController.abort();
+    }
+    ordersStreamAbortController = new AbortController();
+    const signal = ordersStreamAbortController.signal;
+    show(out.stream, "Connecting stream...");
+
+    try {
+      const response = await fetch(`/orders/stream/coordinates?${q.toString()}`, {
+        credentials: "include",
+        signal,
+      });
+      const decoder = new TextDecoder();
+
+      if (!response.ok) {
+        const text = await response.text();
+        let payload = text;
+        try { payload = text ? JSON.parse(text) : null; } catch (_) {}
+        throw { status: response.status, payload };
+      }
+      if (!response.body) {
+        throw new Error("Stream body is not available in this browser.");
+      }
+
+      const reader = response.body.getReader();
+      let buffer = "";
+      let received = 0;
+      const rows = [];
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed) continue;
+          try {
+            rows.push(JSON.parse(trimmed));
+            received += 1;
+          } catch (_) {
+            rows.push({ raw: trimmed });
+            received += 1;
+          }
+          show(out.stream, { received, rows });
+          if (received >= maxRows) {
+            ordersStreamAbortController.abort();
+            show(out.stream, { status: "stopped_by_limit", received, rows });
+            return;
+          }
+        }
+      }
+
+      show(out.stream, { status: "completed", received, rows });
+    } catch (err) {
+      if (err?.name === "AbortError") {
+        show(out.stream, "Stream stopped");
+        return;
+      }
+      show(out.stream, err);
+    } finally {
+      ordersStreamAbortController = null;
+    }
+  });
+
+  document.getElementById("ordersStreamStopBtn").addEventListener("click", () => {
+    if (ordersStreamAbortController) {
+      ordersStreamAbortController.abort();
+    } else {
+      show(out.stream, "Stream is not running");
+    }
   });
 
   document.getElementById("importForm").addEventListener("submit", async (e) => {

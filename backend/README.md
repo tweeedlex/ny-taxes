@@ -21,7 +21,8 @@
   - `GET /orders` (список, pagination, filters)
   - `GET /orders/stats` (агрегація за період з розбивкою по днях)
   - `GET /orders/import/tasks` (всі задачі імпорту)
-  - `WS /orders/import/tasks/ws` (пуш задач кожні 3 секунди)
+  - `WS /orders/import/tasks/ws` (пуш задач кожні 0.3 секунди)
+  - `GET /orders/stream/coordinates` (NDJSON стрім координат ордерів)
   - `GET /static/*` для віддачі статичних файлів з `src/static`
   - CRUD `users` з перевіркою authorities.
 
@@ -110,7 +111,8 @@ docker compose up --build
   - приймає CSV (multipart/form-data);
   - завантажує файл у MinIO;
   - створює `file_tasks` запис;
-  - запускає фонову обробку і оновлює task кожні 30 рядків.
+  - запускає фонову обробку;
+  - прогрес task оновлюється в throttled-режимі (приблизно кожні 1000 рядків і не частіше ніж раз на ~2 секунди).
   - якщо у файлі більше 100 рядків, дані діляться на 5 chunk-ів і рахуються паралельно.
   - валідні ордери пишуться в БД через `Order.bulk_create(...)` батчами по 500.
   - якщо сервер рестартиться, `in_progress` задачі автоматично продовжуються зі зміщенням `successful_rows + failed_rows + 1`.
@@ -118,6 +120,10 @@ docker compose up --build
   - Pagination: `limit`, `offset`
   - Filters: `reporting_code`, `timestamp_from`, `timestamp_to`, `subtotal_min`, `subtotal_max`
   - Для кожного елемента повертається автор: `author_user_id`, `author_login`.
+- `GET /orders/stream/coordinates` потребує `read_orders`.
+  - Повертає NDJSON потік, по одному JSON-обʼєкту в рядку:
+    - `{ "lat": number, "lon": number }`
+  - Підтримує ті ж фільтри, що і `GET /orders` (без pagination/sort).
 - `GET /orders/stats` потребує `read_orders`.
   - Query params: `from_date`, `to_date` у форматі `YYYY.MM.DD` (по полю `timestamp`)
   - Response: total за період + `daily` розбивка з тими ж метриками по днях

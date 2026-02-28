@@ -4,6 +4,7 @@ from typing import Iterable
 
 import shapefile
 
+from src.core.reporting_code import normalize_reporting_code
 from src.models.tax_rate import TaxRate
 from src.models.tax_region import TaxRegion
 from src.services.tax.reporting_code import ReportingCodeByCoordinatesService
@@ -18,15 +19,6 @@ def _chunked(items: list, size: int) -> Iterable[list]:
         yield items[idx : idx + size]
 
 
-def _normalize_reporting_code(raw_code: str) -> str:
-    value = raw_code.strip()
-    if not value:
-        raise ValueError("Reporting code cannot be empty.")
-    if value.isdigit() and len(value) <= 4:
-        return value.zfill(4)
-    return value
-
-
 def _load_tax_regions_from_shp(
     shp_path: Path,
     region_type: str,
@@ -38,7 +30,7 @@ def _load_tax_regions_from_shp(
             raw_code = str(shape_record.record["REP_CODE"]).strip()
             if not raw_code:
                 continue
-            reporting_code = _normalize_reporting_code(raw_code)
+            reporting_code = normalize_reporting_code(raw_code)
             shape = shape_record.shape
             if not shape.points or not shape.parts:
                 continue
@@ -98,7 +90,7 @@ async def _seed_tax_rates_if_needed(static_dir: Path) -> None:
 
     to_insert: list[TaxRate] = []
     for raw_code, raw_payload in raw.items():
-        reporting_code = _normalize_reporting_code(str(raw_code))
+        reporting_code = normalize_reporting_code(str(raw_code))
         jurisdictions = TaxRateByReportingCodeService.parse_rate_payload(
             raw_payload=raw_payload,
             code=reporting_code,

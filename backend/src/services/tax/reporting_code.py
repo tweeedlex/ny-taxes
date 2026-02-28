@@ -3,6 +3,8 @@ from typing import Iterable
 
 from pyproj import Transformer
 
+from src.core.reporting_code import normalize_reporting_code
+
 
 @dataclass(frozen=True)
 class _RegionPolygon:
@@ -72,7 +74,7 @@ class ReportingCodeByCoordinatesService:
         points = tuple((float(x), float(y)) for x, y in points_raw)
         parts = tuple(int(part) for part in parts_raw)
         return _RegionPolygon(
-            reporting_code=cls._normalize_reporting_code(str(row.get("reporting_code", ""))),
+            reporting_code=normalize_reporting_code(str(row.get("reporting_code", ""))),
             bbox=(
                 float(row["bbox_min_lon"]),
                 float(row["bbox_min_lat"]),
@@ -103,15 +105,6 @@ class ReportingCodeByCoordinatesService:
             raise ValueError("Latitude must be between -90 and 90.")
         if not (-180 <= lon <= 180):
             raise ValueError("Longitude must be between -180 and 180.")
-
-    @staticmethod
-    def _normalize_reporting_code(raw_code: str) -> str:
-        value = raw_code.strip()
-        if not value:
-            raise ValueError("Reporting code cannot be empty.")
-        if value.isdigit() and len(value) <= 4:
-            return value.zfill(4)
-        return value
 
     @classmethod
     def _point_in_shape(cls, lon: float, lat: float, polygon: _RegionPolygon) -> bool:

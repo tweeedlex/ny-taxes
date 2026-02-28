@@ -3,7 +3,7 @@ import json
 import logging
 from datetime import date, datetime, time, timedelta
 from decimal import Decimal, ROUND_HALF_UP
-from typing import Literal
+from typing import AsyncIterator, Literal
 from uuid import uuid4
 
 from fastapi import (
@@ -20,6 +20,7 @@ from fastapi import (
     WebSocketException,
     status,
 )
+from fastapi.responses import StreamingResponse
 from pydantic import ValidationError
 from tortoise.functions import Count, Sum
 
@@ -32,6 +33,7 @@ from src.api.deps import (
 )
 from src.core.authorities import EDIT_ORDERS, READ_ORDERS
 from src.core.date_rules import ensure_min_supported_date, ensure_min_supported_datetime
+from src.core.reporting_code import normalize_reporting_code
 from src.core.storage import MinioStorage
 from src.models.file_task import FileTask
 from src.models.order import Order
@@ -51,7 +53,6 @@ from src.services.orders import (
     build_orders_stats_response,
     compute_order_values,
     count_csv_rows,
-    normalize_reporting_code,
     parse_stats_date_param,
     process_import_task,
     resume_in_progress_import_tasks,
@@ -83,6 +84,80 @@ ORDERS_SORT_MAPPING: dict[OrdersSortType, tuple[str, ...]] = {
     "tax_desc": ("-tax_amount", "-id"),
 }
 IMPORT_TASKS_WS_INTERVAL_SECONDS = 0.3
+ORDERS_STREAM_CHUNK_SIZE = 1000
+
+
+def _apply_orders_query_filters(
+    query,
+    reporting_code: str | None,
+    timestamp_from: datetime | None,
+    timestamp_to: datetime | None,
+    subtotal_min: Decimal | None,
+    subtotal_max: Decimal | None,
+):
+    if reporting_code is not None:
+        try:
+            normalized_reporting_code = normalize_reporting_code(reporting_code)
+        except ValueError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=str(exc),
+            ) from exc
+        query = query.filter(reporting_code=normalized_reporting_code)
+
+    if timestamp_from is not None:
+        try:
+            ensure_min_supported_datetime(timestamp_from, "timestamp_from")
+        except ValueError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=str(exc),
+            ) from exc
+        query = query.filter(timestamp__gte=timestamp_from)
+
+    if timestamp_to is not None:
+        try:
+            ensure_min_supported_datetime(timestamp_to, "timestamp_to")
+        except ValueError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=str(exc),
+            ) from exc
+        query = query.filter(timestamp__lte=timestamp_to)
+
+    if subtotal_min is not None and subtotal_max is not None and subtotal_min > subtotal_max:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="subtotal_min cannot be greater than subtotal_max",
+        )
+
+    if subtotal_min is not None:
+        query = query.filter(subtotal__gte=subtotal_min)
+
+    if subtotal_max is not None:
+        query = query.filter(subtotal__lte=subtotal_max)
+
+    return query
+
+
+async def _stream_order_coordinates_ndjson(query) -> AsyncIterator[str]:
+    last_id = 0
+    while True:
+        rows = await query.filter(id__gt=last_id).order_by("id").limit(
+            ORDERS_STREAM_CHUNK_SIZE
+        ).values("id", "latitude", "longitude")
+        if not rows:
+            return
+
+        for row in rows:
+            last_id = int(row["id"])
+            yield json.dumps(
+                {
+                    "lat": float(row["latitude"]),
+                    "lon": float(row["longitude"]),
+                },
+                separators=(",", ":"),
+            ) + "\n"
 
 
 @router.post("", response_model=OrderTaxCalculationResponse)
@@ -179,49 +254,14 @@ async def list_orders(
     sort: OrdersSortType = Query(default="newest"),
     _: User = Depends(require_authority(READ_ORDERS)),
 ) -> OrdersListResponse:
-    query = Order.all().prefetch_related("user")
-
-    if reporting_code is not None:
-        try:
-            normalized_reporting_code = normalize_reporting_code(reporting_code)
-        except ValueError as exc:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail=str(exc),
-            ) from exc
-        query = query.filter(reporting_code=normalized_reporting_code)
-
-    if timestamp_from is not None:
-        try:
-            ensure_min_supported_datetime(timestamp_from, "timestamp_from")
-        except ValueError as exc:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail=str(exc),
-            ) from exc
-        query = query.filter(timestamp__gte=timestamp_from)
-
-    if timestamp_to is not None:
-        try:
-            ensure_min_supported_datetime(timestamp_to, "timestamp_to")
-        except ValueError as exc:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail=str(exc),
-            ) from exc
-        query = query.filter(timestamp__lte=timestamp_to)
-
-    if subtotal_min is not None and subtotal_max is not None and subtotal_min > subtotal_max:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="subtotal_min cannot be greater than subtotal_max",
-        )
-
-    if subtotal_min is not None:
-        query = query.filter(subtotal__gte=subtotal_min)
-
-    if subtotal_max is not None:
-        query = query.filter(subtotal__lte=subtotal_max)
+    query = _apply_orders_query_filters(
+        query=Order.all().prefetch_related("user"),
+        reporting_code=reporting_code,
+        timestamp_from=timestamp_from,
+        timestamp_to=timestamp_to,
+        subtotal_min=subtotal_min,
+        subtotal_max=subtotal_max,
+    )
 
     total = await query.count()
     sort_fields = ORDERS_SORT_MAPPING[sort]
@@ -232,6 +272,29 @@ async def list_orders(
         limit=limit,
         offset=offset,
         items=[to_order_read(order) for order in orders],
+    )
+
+
+@router.get("/stream/coordinates")
+async def stream_order_coordinates(
+    reporting_code: str | None = Query(default=None, min_length=1, max_length=32),
+    timestamp_from: datetime | None = Query(default=None),
+    timestamp_to: datetime | None = Query(default=None),
+    subtotal_min: Decimal | None = Query(default=None, ge=Decimal("0.00")),
+    subtotal_max: Decimal | None = Query(default=None, ge=Decimal("0.00")),
+    _: User = Depends(require_authority(READ_ORDERS)),
+) -> StreamingResponse:
+    query = _apply_orders_query_filters(
+        query=Order.all(),
+        reporting_code=reporting_code,
+        timestamp_from=timestamp_from,
+        timestamp_to=timestamp_to,
+        subtotal_min=subtotal_min,
+        subtotal_max=subtotal_max,
+    )
+    return StreamingResponse(
+        _stream_order_coordinates_ndjson(query),
+        media_type="application/x-ndjson",
     )
 
 

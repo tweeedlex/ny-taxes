@@ -5,17 +5,6 @@ from src.services.orders.types import OrderComputedPayload
 from src.services.tax import ReportingCodeByCoordinatesService, TaxRateByReportingCodeService
 
 
-def normalize_reporting_code(raw_reporting_code: str) -> str:
-    normalized = raw_reporting_code.strip()
-    if not normalized:
-        raise ValueError("reporting_code cannot be empty")
-    if len(normalized) > 32:
-        raise ValueError("reporting_code must have at most 32 characters")
-    if normalized.isdigit() and len(normalized) <= 4:
-        return normalized.zfill(4)
-    return normalized
-
-
 def compute_order_values(
     latitude: float,
     longitude: float,

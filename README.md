@@ -192,6 +192,7 @@ Important env vars for compose:
 
 - `POST /orders` (`edit_orders`) - calculates tax and persists order.
 - `GET /orders` (`read_orders`) - pagination + filters (`reporting_code`, `timestamp_from`, `timestamp_to`, `subtotal_min`, `subtotal_max`) + sort (`newest`, `oldest`, `subtotal_asc`, `subtotal_desc`, `tax_asc`, `tax_desc`).
+- `GET /orders/stream/coordinates` (`read_orders`) - NDJSON stream, one line per `{ "lat": number, "lon": number }` with optional filters (`reporting_code`, `timestamp_from`, `timestamp_to`, `subtotal_min`, `subtotal_max`).
 - `GET /orders/stats` (`read_orders`) - summary stats with optional `from`, `to` (`YYYY-MM-DD`).
 - `GET /orders/stats/daily` (`read_orders`) - daily stats with `from_date`, `to_date` (`YYYY.MM.DD`), aggregation by `timestamp`.
 

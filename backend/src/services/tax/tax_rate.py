@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 
+from src.core.reporting_code import normalize_reporting_code
 
 JurisdictionRateItem = dict[str, str | float]
 JurisdictionsPayload = dict[str, list[JurisdictionRateItem]]
@@ -24,7 +25,7 @@ class TaxRateByReportingCodeService:
     def from_rows(cls, rows: list[dict]) -> "TaxRateByReportingCodeService":
         rates_by_code: dict[str, JurisdictionsPayload] = {}
         for row in rows:
-            code = cls.normalize_reporting_code(str(row.get("reporting_code", "")))
+            code = normalize_reporting_code(str(row.get("reporting_code", "")))
             jurisdictions = cls.parse_rate_payload(
                 raw_payload=row.get("jurisdictions"),
                 code=code,
@@ -33,7 +34,7 @@ class TaxRateByReportingCodeService:
         return cls(rates_by_code=rates_by_code)
 
     def get_tax_rate_breakdown(self, reporting_code: str) -> TaxRateBreakdown | None:
-        normalized_code = self.normalize_reporting_code(reporting_code)
+        normalized_code = normalize_reporting_code(reporting_code)
         payload = self._rates_by_code.get(normalized_code)
         if payload is None:
             return None
@@ -113,12 +114,3 @@ class TaxRateByReportingCodeService:
     @staticmethod
     def _sum_rates(items: list[JurisdictionRateItem]) -> float:
         return sum(float(item["rate"]) for item in items)
-
-    @staticmethod
-    def normalize_reporting_code(raw_code: str) -> str:
-        value = raw_code.strip()
-        if not value:
-            raise ValueError("Reporting code cannot be empty.")
-        if value.isdigit() and len(value) <= 4:
-            return value.zfill(4)
-        return value
