@@ -215,8 +215,15 @@ Important env vars for compose:
 - Invalid rows are skipped and counted as failed.
 - If remaining rows > 100: split into 5 chunks and process in parallel.
 - Valid rows are inserted via `Order.bulk_create(...)` in batches of 500.
-- Task progress is updated every 30 processed rows.
+- Task progress is updated in throttled mode (about every 1000 rows and not more often than every ~2 seconds).
 - On restart, `in_progress` tasks resume from `successful_rows + failed_rows + 1`.
+
+### Background Processing and Recovery
+
+- CSV import is processed fully in background tasks after upload.
+- API request returns immediately with created import task metadata.
+- If server is restarted while import is running, tasks with status `in_progress` are resumed automatically on startup.
+- Processing continues from the last saved progress (`successful_rows + failed_rows + 1`) rather than starting from zero.
 
 ## Date Validation Rule
 
