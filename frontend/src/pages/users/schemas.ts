@@ -28,8 +28,7 @@ export const createUserSchema = z.object({
 
   full_name: z.string().optional(),
 
-  // если ты убрал свитч — можно оставить как есть, или default(true)
-  is_active: z.boolean().default(true),
+  is_active: z.boolean(),
 
   // важное: хотя бы одна роль
   authorities: z.array(authorityEnum).min(1, "Select at least one authority"),

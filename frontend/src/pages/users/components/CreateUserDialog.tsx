@@ -42,6 +42,7 @@ export function CreateUserDialog({ open, onOpenChange }: Props) {
       login: '',
       password: '',
       full_name: '',
+      is_active: true,
       authorities: [],
     },
   })
