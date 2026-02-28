@@ -66,11 +66,10 @@ export function FilterBar({
           <Button
             variant="outline"
             size="sm"
-            className={`h-8 gap-1.5 text-sm bg-transparent ${
-              showFilters || hasActiveFilters
+            className={`h-8 gap-1.5 text-sm bg-transparent ${showFilters || hasActiveFilters
                 ? "border-ring text-foreground"
                 : "border-border text-muted-foreground hover:text-foreground"
-            }`}
+              }`}
             onClick={onToggleFilters}
           >
             <SlidersHorizontal className="w-3.5 h-3.5" />
@@ -158,7 +157,7 @@ function SearchInput({
   };
 
   return (
-    <div className="relative flex-1 min-w-[140px] max-w-xs">
+    <div className="relative flex-1 min-w-[140px]">
       <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
       <Input
         placeholder="Search by reporting code..."
@@ -277,7 +276,7 @@ function ExpandedFilters({
       transition={{ duration: 0.2 }}
       className="overflow-hidden"
     >
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3 p-4 rounded-xl border border-border bg-background">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3 p-4 rounded-xl border border-border bg-background">
         {fields.map(({ label, key, value, placeholder, type }) => (
           <div key={key} className="min-w-0 space-y-1">
             {" "}
