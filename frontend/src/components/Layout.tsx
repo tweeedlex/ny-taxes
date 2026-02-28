@@ -7,8 +7,6 @@ import {
   Users,
   LogOut,
   MapPin,
-  Zap,
-  Activity,
   Menu,
   X,
 } from 'lucide-react'
@@ -29,7 +27,7 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   {to: '/orders', icon: ShoppingCart, label: 'Orders'},
-  {to: '/orders/import', icon: Upload, label: 'CSV Import'},
+  {to: '/import', icon: Upload, label: 'CSV Import'},
   {to: '/stats', icon: BarChart3, label: 'Statistics'},
   {to: '/users', icon: Users, label: 'Users', authority: 'read_users'},
 ]
@@ -77,8 +75,7 @@ function SidebarContent({onClose}: { onClose?: () => void }) {
           <MapPin className="w-4 h-4 text-background" strokeWidth={2.5}/>
         </div>
         <div>
-          <div className="text-sm font-bold text-foreground leading-none tracking-tight">NY Taxes</div>
-          <div className="text-[10px] text-muted-foreground mt-0.5">Admin Panel v2</div>
+          <div className="text-sm font-bold text-foreground leading-none tracking-tight">NYS Taxes</div>
         </div>
         <div className="ml-auto flex items-center gap-1">
           <ThemeToggle className="p-0"/>
@@ -164,8 +161,7 @@ export default function Layout() {
             <MapPin className="w-3.5 h-3.5 text-background" strokeWidth={2.5}/>
           </div>
           <div>
-            <div className="text-sm font-bold text-foreground leading-none">NY Taxes</div>
-            <div className="text-[9px] text-muted-foreground">Admin Panel v2</div>
+            <div className="text-sm font-bold text-foreground leading-none">NYS Taxes</div>
           </div>
         </div>
         <button

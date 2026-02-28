@@ -33,7 +33,7 @@ export function PageHeader() {
                 variant="outline"
                 size="sm"
                 className="h-8 gap-1.5 text-zinc-400 border-zinc-700 hover:border-zinc-600 hover:text-foreground bg-transparent"
-                onClick={() => navigate('/orders/import')}
+                onClick={() => navigate('/import')}
               >
                 <Download className="w-3.5 h-3.5" />
                 Import
