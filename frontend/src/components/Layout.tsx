@@ -16,6 +16,7 @@ import { Separator } from './ui/separator'
 import { ThemeToggle } from './ThemeToggle'
 import { useAuthStore } from '@/store/auth.store'
 import { authApi } from '@/lib/endpoints'
+import { queryClient } from '@/lib/query-client'
 import toast from 'react-hot-toast'
 import {
   AlertDialog,
@@ -68,6 +69,7 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
       // ignore logout errors
     }
     clearUser()
+    queryClient.clear()
     navigate('/login')
     toast.success('Signed out')
   }
