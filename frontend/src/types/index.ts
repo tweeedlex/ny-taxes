@@ -165,3 +165,23 @@ export interface OrdersStatsResponse {
   total_orders: number
   daily: OrdersStatsDay[]
 }
+
+export interface OrdersStatsSummaryResponse {
+  total_orders: number
+  total_revenue: number
+  total_tax: number
+  average_tax_percent: number
+}
+
+export interface OrderCoordinatePoint {
+  lat: number
+  lon: number
+}
+
+export interface CoordinateStreamParams {
+  reporting_code?: string
+  timestamp_from?: string
+  timestamp_to?: string
+  subtotal_min?: number
+  subtotal_max?: number
+}
