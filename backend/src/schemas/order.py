@@ -96,6 +96,13 @@ class OrdersStatsResponse(BaseModel):
     daily: list[OrdersStatsDay]
 
 
+class OrdersStatsSummaryResponse(BaseModel):
+    total_orders: int
+    total_revenue: float
+    total_tax: float
+    average_tax_percent: float
+
+
 class FileTaskRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

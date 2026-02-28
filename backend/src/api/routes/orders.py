@@ -1,8 +1,9 @@
 import asyncio
 import json
 import logging
-from datetime import datetime
-from decimal import Decimal
+from datetime import date, datetime, time, timedelta
+from decimal import Decimal, ROUND_HALF_UP
+from typing import Literal
 from uuid import uuid4
 
 from fastapi import (
@@ -19,6 +20,7 @@ from fastapi import (
     status,
 )
 from pydantic import ValidationError
+from tortoise.functions import Count, Sum
 
 from src.api.deps import (
     get_reporting_code_service,
@@ -28,7 +30,7 @@ from src.api.deps import (
     require_websocket_authority,
 )
 from src.core.authorities import EDIT_ORDERS, READ_ORDERS
-from src.core.date_rules import ensure_min_supported_datetime
+from src.core.date_rules import ensure_min_supported_date, ensure_min_supported_datetime
 from src.core.storage import MinioStorage
 from src.models.file_task import FileTask
 from src.models.order import Order
@@ -39,6 +41,7 @@ from src.schemas.order import (
     OrderImportTaskCreateResponse,
     OrdersListResponse,
     OrdersStatsResponse,
+    OrdersStatsSummaryResponse,
     OrderTaxCalculationResponse,
 )
 from src.services.orders import (
@@ -60,6 +63,24 @@ from src.services.tax import ReportingCodeByCoordinatesService, TaxRateByReporti
 
 router = APIRouter(prefix="/orders", tags=["orders"])
 logger = logging.getLogger(__name__)
+
+OrdersSortType = Literal[
+    "newest",
+    "oldest",
+    "subtotal_asc",
+    "subtotal_desc",
+    "tax_asc",
+    "tax_desc",
+]
+
+ORDERS_SORT_MAPPING: dict[OrdersSortType, tuple[str, ...]] = {
+    "newest": ("-timestamp", "-id"),
+    "oldest": ("timestamp", "id"),
+    "subtotal_asc": ("subtotal", "id"),
+    "subtotal_desc": ("-subtotal", "-id"),
+    "tax_asc": ("tax_amount", "id"),
+    "tax_desc": ("-tax_amount", "-id"),
+}
 
 
 @router.post("", response_model=OrderTaxCalculationResponse)
@@ -151,6 +172,7 @@ async def list_orders(
     timestamp_to: datetime | None = Query(default=None),
     subtotal_min: Decimal | None = Query(default=None, ge=Decimal("0.00")),
     subtotal_max: Decimal | None = Query(default=None, ge=Decimal("0.00")),
+    sort: OrdersSortType = Query(default="newest"),
     _: User = Depends(require_authority(READ_ORDERS)),
 ) -> OrdersListResponse:
     query = Order.all().prefetch_related("user")
@@ -198,7 +220,8 @@ async def list_orders(
         query = query.filter(subtotal__lte=subtotal_max)
 
     total = await query.count()
-    orders = await query.order_by("-id").offset(offset).limit(limit)
+    sort_fields = ORDERS_SORT_MAPPING[sort]
+    orders = await query.order_by(*sort_fields).offset(offset).limit(limit)
 
     return OrdersListResponse(
         total=total,
@@ -208,8 +231,80 @@ async def list_orders(
     )
 
 
-@router.get("/stats", response_model=OrdersStatsResponse)
+@router.get("/stats", response_model=OrdersStatsSummaryResponse)
 async def orders_stats(
+    from_: date | None = Query(default=None, alias="from"),
+    to_: date | None = Query(default=None, alias="to"),
+    from_date: str | None = Query(
+        default=None,
+        description="Deprecated. Format: YYYY.MM.DD",
+    ),
+    to_date: str | None = Query(
+        default=None,
+        description="Deprecated. Format: YYYY.MM.DD",
+    ),
+    _: User = Depends(require_authority(READ_ORDERS)),
+) -> OrdersStatsSummaryResponse:
+    try:
+        start_date = from_
+        end_date = to_
+        if start_date is None and from_date is not None:
+            start_date = parse_stats_date_param(name="from_date", value=from_date)
+        if end_date is None and to_date is not None:
+            end_date = parse_stats_date_param(name="to_date", value=to_date)
+
+        if start_date is not None:
+            ensure_min_supported_date(start_date, "from")
+        if end_date is not None:
+            ensure_min_supported_date(end_date, "to")
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(exc),
+        ) from exc
+
+    if start_date is not None and end_date is not None and start_date > end_date:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="from cannot be greater than to",
+        )
+
+    query = Order.all()
+    if start_date is not None:
+        query = query.filter(timestamp__gte=datetime.combine(start_date, time.min))
+    if end_date is not None:
+        query = query.filter(
+            timestamp__lt=datetime.combine(end_date + timedelta(days=1), time.min)
+        )
+
+    aggregate_rows = await query.annotate(
+        total_orders=Count("id"),
+        total_revenue=Sum("subtotal"),
+        total_tax=Sum("tax_amount"),
+    ).values("total_orders", "total_revenue", "total_tax")
+
+    row = aggregate_rows[0] if aggregate_rows else {}
+    total_orders = int(row.get("total_orders") or 0)
+    total_revenue = Decimal(str(row.get("total_revenue") or "0"))
+    total_tax = Decimal(str(row.get("total_tax") or "0"))
+    average_tax_percent = Decimal("0")
+    if total_revenue > 0:
+        average_tax_percent = (total_tax / total_revenue) * Decimal("100")
+
+    return OrdersStatsSummaryResponse(
+        total_orders=total_orders,
+        total_revenue=float(
+            total_revenue.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+        ),
+        total_tax=float(total_tax.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)),
+        average_tax_percent=float(
+            average_tax_percent.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+        ),
+    )
+
+
+@router.get("/stats/daily", response_model=OrdersStatsResponse)
+async def orders_stats_daily(
     from_date: str = Query(..., description="Format: YYYY.MM.DD"),
     to_date: str = Query(..., description="Format: YYYY.MM.DD"),
     _: User = Depends(require_authority(READ_ORDERS)),
