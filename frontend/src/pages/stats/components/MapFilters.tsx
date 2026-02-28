@@ -1,13 +1,12 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { X, Play } from 'lucide-react'
+import { useCallback, useState } from 'react'
+import { X, Play, Loader2 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import type { CoordinateStreamParams } from '@/types'
 
-const COOLDOWN_SEC = 2
-
 interface Props {
   onApply: (filters: CoordinateStreamParams) => void
+  isStreaming: boolean
 }
 
 function apiToInput(v: string): string {
@@ -17,50 +16,21 @@ function inputToApi(v: string): string {
   return v.replace(/-/g, '.')
 }
 
-export function MapFilters({ onApply }: Props) {
+export function MapFilters({ onApply, isStreaming }: Props) {
   const [draft, setDraft] = useState<CoordinateStreamParams>({})
-  const [cooldown, setCooldown] = useState(0)
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
-  const update = useCallback(
-    (patch: Partial<CoordinateStreamParams>) => {
-      setDraft((prev) => ({ ...prev, ...patch }))
-    },
-    [],
-  )
+  const update = useCallback((patch: Partial<CoordinateStreamParams>) => {
+    setDraft((prev) => ({ ...prev, ...patch }))
+  }, [])
 
   const hasDraft = Object.values(draft).some((v) => v !== undefined && v !== '')
 
   const clearDraft = useCallback(() => setDraft({}), [])
 
-  const startCooldown = useCallback(() => {
-    setCooldown(COOLDOWN_SEC)
-    intervalRef.current = setInterval(() => {
-      setCooldown((prev) => {
-        if (prev <= 1) {
-          clearInterval(intervalRef.current!)
-          intervalRef.current = null
-          return 0
-        }
-        return prev - 1
-      })
-    }, 1000)
-  }, [])
-
   const handleApply = useCallback(() => {
-    if (cooldown > 0) return
+    if (isStreaming) return
     onApply(draft)
-    startCooldown()
-  }, [cooldown, draft, onApply, startCooldown])
-
-  // Cleanup interval on unmount
-  useEffect(() => {
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current)
-    }
-  }, [])
-
-  const isOnCooldown = cooldown > 0
+  }, [isStreaming, draft, onApply])
 
   return (
     <div className="flex flex-wrap items-end gap-3">
@@ -139,6 +109,7 @@ export function MapFilters({ onApply }: Props) {
             variant="ghost"
             size="sm"
             onClick={clearDraft}
+            disabled={isStreaming}
             className="h-8 px-2 text-xs gap-1"
           >
             <X className="w-3 h-3" />
@@ -149,21 +120,13 @@ export function MapFilters({ onApply }: Props) {
         <Button
           size="sm"
           onClick={handleApply}
-          disabled={isOnCooldown}
-          className="h-8 px-3 text-xs gap-1.5 relative overflow-hidden"
+          disabled={isStreaming}
+          className="h-8 px-3 text-xs gap-1.5"
         >
-          {isOnCooldown ? (
+          {isStreaming ? (
             <>
-              {/* Shrinking progress bar overlay */}
-              <span
-                className="absolute inset-0 bg-primary/20 origin-left transition-none"
-                style={{
-                  transform: `scaleX(${cooldown / COOLDOWN_SEC})`,
-                  transformOrigin: 'left',
-                  transition: 'transform 1s linear',
-                }}
-              />
-              <span className="relative">{cooldown}s</span>
+              <Loader2 className="w-3 h-3 animate-spin" />
+              Loading...
             </>
           ) : (
             <>

@@ -9,9 +9,10 @@ import type { CoordinateStreamParams } from '@/types'
 interface Props {
   filters: CoordinateStreamParams
   enabled: boolean
+  onStreamingChange?: (streaming: boolean) => void
 }
 
-export function OrdersMap({ filters, enabled }: Props) {
+export function OrdersMap({ filters, enabled, onStreamingChange }: Props) {
   const mapContainerRef = useRef<HTMLDivElement | null>(null)
   const mapRef = useRef<L.Map | null>(null)
   const markersLayerRef = useRef<L.LayerGroup | null>(null)
@@ -20,6 +21,11 @@ export function OrdersMap({ filters, enabled }: Props) {
   const [shapesError, setShapesError] = useState<string | null>(null)
 
   const { points, isStreaming, error: streamError } = useCoordinateStream(filters, enabled)
+
+  // Notify parent when streaming state changes
+  useEffect(() => {
+    onStreamingChange?.(isStreaming)
+  }, [isStreaming, onStreamingChange])
 
   // Initialize map
   useEffect(() => {
