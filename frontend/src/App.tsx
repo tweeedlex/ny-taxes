@@ -29,17 +29,22 @@ export default function App() {
                   <Navigate to="/orders" replace/>
                 </Restrict>
               }/>
-              <Route path="/orders" element={<OrdersPage/>}/>
+              <Route path="/orders" element={
+                <Restrict authorities={[AUTHORITIES.READ_ORDERS, AUTHORITIES.EDIT_ORDERS]}
+                          fallback={<Navigate to="/users" replace/>}>
+                  <OrdersPage/>
+                </Restrict>
+              }/>
               <Route path="/import" element={
                 <Restrict authorities={[AUTHORITIES.READ_ORDERS, AUTHORITIES.EDIT_ORDERS]}
-                          fallback={<Navigate to="/orders" replace/>}>
+                          fallback={<Navigate to="/users" replace/>}>
                   <ImportPage/>
                 </Restrict>
               }/>
 
               <Route path="/stats" element={
                 <Restrict authorities={[AUTHORITIES.READ_ORDERS, AUTHORITIES.EDIT_ORDERS]}
-                          fallback={<Navigate to="/orders" replace/>}>
+                          fallback={<Navigate to="/users" replace/>}>
                   <StatsPage/>
                 </Restrict>}/>
 
