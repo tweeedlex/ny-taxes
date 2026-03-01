@@ -9,7 +9,7 @@ import tempfile
 import time
 from datetime import datetime
 from decimal import Decimal
-from typing import Any
+from typing import Any, NamedTuple
 from urllib.parse import unquote, urlsplit
 
 from redis.asyncio import Redis
@@ -19,7 +19,7 @@ from src.core.reporting_code import normalize_reporting_code
 from src.core.storage import MinioStorage
 from src.models.file_task import FileTask
 from src.models.order import Order
-from src.services.orders.calculator import compute_order_values
+from src.services.orders.calculator import compute_order_values_by_reporting_code
 from src.services.orders.types import OrderComputedPayload
 from src.services.tax import (
     ReportingCodeByCoordinatesService,
@@ -38,6 +38,21 @@ IMPORT_COMPUTE_BATCH_SIZE = 1000
 IMPORT_PROGRESS_UPDATE_ROWS = 1000
 IMPORT_PROGRESS_UPDATE_SECONDS = 2.0
 TAX_RATE_CACHE_HASH_KEY = "tax-rate-breakdowns:v1"
+
+
+class _ImportColumnIndexes(NamedTuple):
+    longitude: int
+    latitude: int
+    timestamp: int
+    subtotal: int
+
+
+class _ParsedImportRow(NamedTuple):
+    row_number: int
+    latitude: float
+    longitude: float
+    timestamp: datetime
+    subtotal: Decimal
 
 
 def _build_breakdown_from_jurisdictions(
@@ -95,7 +110,7 @@ class _RedisBackedTaxRateService:
                     jurisdictions=jurisdictions,
                 )
             except Exception:
-                logger.warning("Failed to parse redis tax-rate cache for code=%s", raw_code)
+                logger.debug("Failed to parse redis tax-rate cache for code=%s", raw_code)
         return cls(base_service=base_service, cached_breakdowns=cached_breakdowns)
 
     def get_tax_rate_breakdown(self, reporting_code: str) -> TaxRateBreakdown | None:
@@ -213,18 +228,23 @@ async def process_import_task(
         else:
             text_stream = io.StringIO(source_content.decode("utf-8-sig"))
 
-        reader = csv.DictReader(text_stream)
-        columns = _resolve_import_columns(reader.fieldnames)
+        header_line = text_stream.readline()
+        if not header_line:
+            raise ValueError("CSV file is empty or has no header.")
+        header_rows = list(csv.reader([header_line]))
+        if not header_rows:
+            raise ValueError("CSV file is empty or has no header.")
+        columns = _resolve_import_columns(header_rows[0])
 
         total_remaining_rows = max(task.total_rows - processed_rows, 0)
         use_parallel = total_remaining_rows > PARALLEL_IMPORT_THRESHOLD
-        indexed_rows_batch: list[tuple[int, dict[str, str]]] = []
+        indexed_rows_batch: list[tuple[int, str]] = []
 
-        for row_number, row in enumerate(reader, start=1):
+        for row_number, line in enumerate(text_stream, start=1):
             if row_number <= processed_rows:
                 continue
 
-            indexed_rows_batch.append((row_number, row))
+            indexed_rows_batch.append((row_number, line))
             if len(indexed_rows_batch) < IMPORT_COMPUTE_BATCH_SIZE:
                 continue
 
@@ -288,7 +308,7 @@ async def process_import_task(
             try:
                 await cached_tax_rate_service.flush_to_redis(redis_client)
             except Exception:
-                logger.warning("Failed to flush tax-rate cache to redis")
+                logger.debug("Failed to flush tax-rate cache to redis")
 
         if pending_orders or pending_failed_rows:
             inserted_count, flushed_failed = await _flush_pending_import_batch(
@@ -308,8 +328,8 @@ async def process_import_task(
 async def _process_indexed_rows_batch(
     task_id: int,
     task_user_id: int,
-    indexed_rows: list[tuple[int, dict[str, str]]],
-    columns: dict[str, str],
+    indexed_rows: list[tuple[int, str]],
+    columns: _ImportColumnIndexes,
     use_parallel: bool,
     reporting_code_service: ReportingCodeByCoordinatesService,
     tax_rate_service: TaxRateByReportingCodeService,
@@ -375,58 +395,120 @@ async def _process_indexed_rows_batch(
     )
 
 
-def _resolve_import_columns(fieldnames: list[str] | None) -> dict[str, str]:
+def _resolve_import_columns(fieldnames: list[str] | None) -> _ImportColumnIndexes:
     if not fieldnames:
         raise ValueError("CSV file is empty or has no header.")
 
-    normalized: dict[str, str] = {}
-    for field in fieldnames:
+    normalized_to_index: dict[str, int] = {}
+    for idx, field in enumerate(fieldnames):
         key = field.strip().lower().replace("_", "").replace(" ", "")
-        normalized[key] = field
+        normalized_to_index[key] = idx
 
     required_keys = ("longitude", "latitude", "timestamp", "subtotal")
-    missing = [key for key in required_keys if key not in normalized]
+    missing = [key for key in required_keys if key not in normalized_to_index]
     if missing:
         raise ValueError(f"Missing required CSV columns: {', '.join(missing)}")
-    return {key: normalized[key] for key in required_keys}
+
+    return _ImportColumnIndexes(
+        longitude=normalized_to_index["longitude"],
+        latitude=normalized_to_index["latitude"],
+        timestamp=normalized_to_index["timestamp"],
+        subtotal=normalized_to_index["subtotal"],
+    )
 
 
 def _parse_import_row(
-    row: dict[str, str],
-    columns: dict[str, str],
+    line: str,
+    columns: _ImportColumnIndexes,
 ) -> tuple[float, float, datetime, Decimal]:
-    longitude = float(row[columns["longitude"]].strip())
-    latitude = float(row[columns["latitude"]].strip())
-    timestamp = _parse_import_timestamp(row[columns["timestamp"]].strip())
-    subtotal = Decimal(row[columns["subtotal"]].strip())
+    parsed_rows = list(csv.reader([line]))
+    if not parsed_rows:
+        raise ValueError("CSV row is empty")
+    row = parsed_rows[0]
+    latitude = float(row[columns.latitude].strip())
+    longitude = float(row[columns.longitude].strip())
+    timestamp = _parse_import_timestamp(row[columns.timestamp].strip())
+    subtotal = Decimal(row[columns.subtotal].strip())
     if subtotal < 0:
         raise ValueError("subtotal must be >= 0")
+    if not (-90 <= latitude <= 90) or not (-180 <= longitude <= 180):
+        raise ValueError("coordinates out of bounds")
     return latitude, longitude, timestamp, subtotal
 
 
 def _compute_outcomes_sequential(
-    indexed_rows: list[tuple[int, dict[str, str]]],
-    columns: dict[str, str],
+    indexed_rows: list[tuple[int, str]],
+    columns: _ImportColumnIndexes,
     reporting_code_service: ReportingCodeByCoordinatesService,
     tax_rate_service: TaxRateByReportingCodeService,
 ) -> list[tuple[int, bool, OrderComputedPayload | None]]:
+    parsed_rows: list[_ParsedImportRow] = []
     outcomes: list[tuple[int, bool, OrderComputedPayload | None]] = []
-    for row_number, row in indexed_rows:
-        outcomes.append(
-            _compute_row_outcome(
-                row_number=row_number,
-                row=row,
+
+    for row_number, line in indexed_rows:
+        try:
+            latitude, longitude, timestamp, subtotal = _parse_import_row(
+                line=line,
                 columns=columns,
-                reporting_code_service=reporting_code_service,
+            )
+            parsed_rows.append(
+                _ParsedImportRow(
+                    row_number=row_number,
+                    latitude=latitude,
+                    longitude=longitude,
+                    timestamp=timestamp,
+                    subtotal=subtotal,
+                )
+            )
+        except Exception as exc:
+            outcomes.append((row_number, False, None))
+
+    if not parsed_rows:
+        return outcomes
+
+    reporting_codes = reporting_code_service.get_reporting_codes_batch(
+        [(row.latitude, row.longitude) for row in parsed_rows]
+    )
+
+    for row, reporting_code in zip(parsed_rows, reporting_codes, strict=False):
+        if reporting_code is None:
+            outcomes.append((row.row_number, False, None))
+            continue
+
+        try:
+            computed = compute_order_values_by_reporting_code(
+                latitude=row.latitude,
+                longitude=row.longitude,
+                timestamp=row.timestamp,
+                subtotal_raw=row.subtotal,
+                reporting_code=reporting_code,
                 tax_rate_service=tax_rate_service,
             )
-        )
-    return outcomes
+            outcomes.append((row.row_number, True, computed))
+        except LookupError as exc:
+            logger.debug(
+                "Import row %s tax lookup error: %s (latitude=%s longitude=%s)",
+                row.row_number,
+                exc,
+                row.latitude,
+                row.longitude,
+            )
+            outcomes.append((row.row_number, False, None))
+        except Exception:
+            logger.exception(
+                "Import row %s unexpected processing error (latitude=%s longitude=%s)",
+                row.row_number,
+                row.latitude,
+                row.longitude,
+            )
+            outcomes.append((row.row_number, False, None))
+
+    return sorted(outcomes, key=lambda item: item[0])
 
 
 async def _compute_outcomes_parallel(
-    indexed_rows: list[tuple[int, dict[str, str]]],
-    columns: dict[str, str],
+    indexed_rows: list[tuple[int, str]],
+    columns: _ImportColumnIndexes,
     reporting_code_service: ReportingCodeByCoordinatesService,
     tax_rate_service: TaxRateByReportingCodeService,
 ) -> list[tuple[int, bool, OrderComputedPayload | None]]:
@@ -451,78 +533,15 @@ async def _compute_outcomes_parallel(
 
 
 def _split_rows_into_chunks(
-    indexed_rows: list[tuple[int, dict[str, str]]],
+    indexed_rows: list[tuple[int, str]],
     chunks_count: int,
-) -> list[list[tuple[int, dict[str, str]]]]:
+) -> list[list[tuple[int, str]]]:
     if not indexed_rows:
         return []
-    chunks: list[list[tuple[int, dict[str, str]]]] = [[] for _ in range(chunks_count)]
+    chunks: list[list[tuple[int, str]]] = [[] for _ in range(chunks_count)]
     for idx, row in enumerate(indexed_rows):
         chunks[idx % chunks_count].append(row)
     return chunks
-
-
-def _compute_row_outcome(
-    row_number: int,
-    row: dict[str, str],
-    columns: dict[str, str],
-    reporting_code_service: ReportingCodeByCoordinatesService,
-    tax_rate_service: TaxRateByReportingCodeService,
-) -> tuple[int, bool, OrderComputedPayload | None]:
-    try:
-        latitude, longitude, timestamp, subtotal = _parse_import_row(row=row, columns=columns)
-    except Exception as exc:
-        logger.warning(
-            "Import row %s parse error: %s",
-            row_number,
-            exc,
-        )
-        return (row_number, False, None)
-
-    try:
-        computed = compute_order_values(
-            latitude=latitude,
-            longitude=longitude,
-            timestamp=timestamp,
-            subtotal_raw=subtotal,
-            reporting_code_service=reporting_code_service,
-            tax_rate_service=tax_rate_service,
-        )
-        return (row_number, True, computed)
-    except ValueError as exc:
-        if "outside New York State coverage" in str(exc):
-            logger.warning(
-                "Import row %s is outside NY coverage: latitude=%s longitude=%s",
-                row_number,
-                latitude,
-                longitude,
-            )
-        else:
-            logger.warning(
-                "Import row %s validation error: %s (latitude=%s longitude=%s)",
-                row_number,
-                exc,
-                latitude,
-                longitude,
-            )
-        return (row_number, False, None)
-    except LookupError as exc:
-        logger.warning(
-            "Import row %s tax lookup error: %s (latitude=%s longitude=%s)",
-            row_number,
-            exc,
-            latitude,
-            longitude,
-        )
-        return (row_number, False, None)
-    except Exception:
-        logger.exception(
-            "Import row %s unexpected processing error (latitude=%s longitude=%s)",
-            row_number,
-            latitude,
-            longitude,
-        )
-        return (row_number, False, None)
 
 
 def _parse_import_timestamp(raw_timestamp: str) -> datetime:

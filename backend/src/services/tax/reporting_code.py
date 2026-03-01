@@ -4,6 +4,7 @@ from typing import Iterable
 from pyproj import Transformer
 
 from src.core.reporting_code import normalize_reporting_code
+from src.native import GeoZoneNative, NativePolygonDataset, NativeShapeBuffers
 
 
 @dataclass(frozen=True)
@@ -12,6 +13,7 @@ class _RegionPolygon:
     bbox: tuple[float, float, float, float]
     points: tuple[tuple[float, float], ...]
     parts: tuple[int, ...]
+    native_buffers: NativeShapeBuffers | None
 
 
 class ReportingCodeByCoordinatesService:
@@ -29,6 +31,10 @@ class ReportingCodeByCoordinatesService:
         )
         self._city_polygons = city_polygons
         self._county_polygons = county_polygons
+        self._city_codes = tuple(polygon.reporting_code for polygon in city_polygons)
+        self._county_codes = tuple(polygon.reporting_code for polygon in county_polygons)
+        self._city_native_dataset = self._build_native_dataset(city_polygons)
+        self._county_native_dataset = self._build_native_dataset(county_polygons)
 
     @classmethod
     def from_rows(
@@ -51,6 +57,8 @@ class ReportingCodeByCoordinatesService:
 
         city_code = self._find_reporting_code(
             polygons=self._city_polygons,
+            codes=self._city_codes,
+            native_dataset=self._city_native_dataset,
             lat=projected_lat,
             lon=projected_lon,
         )
@@ -59,6 +67,8 @@ class ReportingCodeByCoordinatesService:
 
         county_code = self._find_reporting_code(
             polygons=self._county_polygons,
+            codes=self._county_codes,
+            native_dataset=self._county_native_dataset,
             lat=projected_lat,
             lon=projected_lon,
         )
@@ -66,6 +76,56 @@ class ReportingCodeByCoordinatesService:
             return county_code
 
         return None
+
+    def get_reporting_codes_batch(
+        self,
+        coordinates: list[tuple[float, float]],
+    ) -> list[str | None]:
+        if not coordinates:
+            return []
+
+        lats = [float(lat) for lat, _ in coordinates]
+        lons = [float(lon) for _, lon in coordinates]
+        for lat, lon in coordinates:
+            self._validate_coordinates(lat=lat, lon=lon)
+
+        projected_lons, projected_lats = self._transformer.transform(lons, lats)
+
+        city_indexes = self._find_reporting_code_indexes_batch(
+            polygons=self._city_polygons,
+            native_dataset=self._city_native_dataset,
+            lats=projected_lats,
+            lons=projected_lons,
+        )
+        result: list[str | None] = [None] * len(coordinates)
+        unresolved_positions: list[int] = []
+        unresolved_lats: list[float] = []
+        unresolved_lons: list[float] = []
+
+        for idx, city_index in enumerate(city_indexes):
+            if city_index >= 0:
+                result[idx] = self._city_codes[city_index]
+            else:
+                unresolved_positions.append(idx)
+                unresolved_lats.append(projected_lats[idx])
+                unresolved_lons.append(projected_lons[idx])
+
+        if not unresolved_positions:
+            return result
+
+        county_indexes = self._find_reporting_code_indexes_batch(
+            polygons=self._county_polygons,
+            native_dataset=self._county_native_dataset,
+            lats=unresolved_lats,
+            lons=unresolved_lons,
+        )
+
+        for unresolved_idx, county_index in enumerate(county_indexes):
+            if county_index >= 0:
+                original_idx = unresolved_positions[unresolved_idx]
+                result[original_idx] = self._county_codes[county_index]
+
+        return result
 
     @classmethod
     def _to_polygon(cls, row: dict) -> _RegionPolygon:
@@ -83,14 +143,29 @@ class ReportingCodeByCoordinatesService:
             ),
             points=points,
             parts=parts,
+            native_buffers=GeoZoneNative.build_shape_buffers(
+                points=points,
+                parts=parts,
+            ),
         )
 
     def _find_reporting_code(
         self,
         polygons: tuple[_RegionPolygon, ...],
+        codes: tuple[str, ...],
+        native_dataset: NativePolygonDataset | None,
         lat: float,
         lon: float,
     ) -> str | None:
+        if native_dataset is not None:
+            polygon_idx = GeoZoneNative.find_first_polygon_index(
+                lon=lon,
+                lat=lat,
+                dataset=native_dataset,
+            )
+            if polygon_idx >= 0:
+                return codes[polygon_idx]
+
         for polygon in polygons:
             min_lon, min_lat, max_lon, max_lat = polygon.bbox
             if not (min_lon <= lon <= max_lon and min_lat <= lat <= max_lat):
@@ -98,6 +173,53 @@ class ReportingCodeByCoordinatesService:
             if self._point_in_shape(lon=lon, lat=lat, polygon=polygon):
                 return polygon.reporting_code
         return None
+
+    def _find_reporting_code_indexes_batch(
+        self,
+        polygons: tuple[_RegionPolygon, ...],
+        native_dataset: NativePolygonDataset | None,
+        lats: list[float],
+        lons: list[float],
+    ) -> list[int]:
+        if not lats:
+            return []
+
+        if native_dataset is not None:
+            return GeoZoneNative.find_first_polygon_index_batch(
+                lons=lons,
+                lats=lats,
+                dataset=native_dataset,
+            )
+
+        result: list[int] = []
+        for lat, lon in zip(lats, lons, strict=False):
+            match_idx = -1
+            for idx, polygon in enumerate(polygons):
+                min_lon, min_lat, max_lon, max_lat = polygon.bbox
+                if not (min_lon <= lon <= max_lon and min_lat <= lat <= max_lat):
+                    continue
+                if self._point_in_shape(lon=lon, lat=lat, polygon=polygon):
+                    match_idx = idx
+                    break
+            result.append(match_idx)
+        return result
+
+    @staticmethod
+    def _build_native_dataset(
+        polygons: tuple[_RegionPolygon, ...],
+    ) -> NativePolygonDataset | None:
+        if not polygons:
+            return None
+        return GeoZoneNative.build_polygon_dataset(
+            [
+                {
+                    "bbox": polygon.bbox,
+                    "points": polygon.points,
+                    "parts": polygon.parts,
+                }
+                for polygon in polygons
+            ]
+        )
 
     @staticmethod
     def _validate_coordinates(lat: float, lon: float) -> None:
@@ -110,6 +232,12 @@ class ReportingCodeByCoordinatesService:
     def _point_in_shape(cls, lon: float, lat: float, polygon: _RegionPolygon) -> bool:
         if not polygon.parts:
             return False
+        if polygon.native_buffers is not None:
+            return GeoZoneNative.point_in_shape(
+                lon=lon,
+                lat=lat,
+                buffers=polygon.native_buffers,
+            )
 
         boundaries = [*polygon.parts, len(polygon.points)]
         inside = False

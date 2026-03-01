@@ -1,4 +1,7 @@
-from src.services.orders.calculator import compute_order_values
+from src.services.orders.calculator import (
+    compute_order_values,
+    compute_order_values_by_reporting_code,
+)
 from src.services.orders.importer import (
     FILE_TASK_STATUS_COMPLETED,
     FILE_TASK_STATUS_IN_PROGRESS,
@@ -26,6 +29,7 @@ __all__ = (
     "build_datetime_range",
     "build_orders_stats_response",
     "compute_order_values",
+    "compute_order_values_by_reporting_code",
     "count_csv_rows",
     "parse_stats_date_param",
     "process_import_task",

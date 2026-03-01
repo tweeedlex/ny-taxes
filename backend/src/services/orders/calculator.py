@@ -5,18 +5,14 @@ from src.services.orders.types import OrderComputedPayload
 from src.services.tax import ReportingCodeByCoordinatesService, TaxRateByReportingCodeService
 
 
-def compute_order_values(
+def _build_computed_payload(
     latitude: float,
     longitude: float,
     timestamp: datetime,
     subtotal_raw: Decimal,
-    reporting_code_service: ReportingCodeByCoordinatesService,
+    reporting_code: str,
     tax_rate_service: TaxRateByReportingCodeService,
 ) -> OrderComputedPayload:
-    reporting_code = reporting_code_service.get_reporting_code(lat=latitude, lon=longitude)
-    if reporting_code is None:
-        raise ValueError("Delivery point is outside New York State coverage.")
-
     rates = tax_rate_service.get_tax_rate_breakdown(reporting_code)
     if rates is None:
         raise LookupError(f"Tax rate not found for reporting code {reporting_code}.")
@@ -66,3 +62,42 @@ def compute_order_values(
         "city_rate": city_rate,
         "special_rates": special_rates,
     }
+
+
+def compute_order_values_by_reporting_code(
+    latitude: float,
+    longitude: float,
+    timestamp: datetime,
+    subtotal_raw: Decimal,
+    reporting_code: str,
+    tax_rate_service: TaxRateByReportingCodeService,
+) -> OrderComputedPayload:
+    return _build_computed_payload(
+        latitude=latitude,
+        longitude=longitude,
+        timestamp=timestamp,
+        subtotal_raw=subtotal_raw,
+        reporting_code=reporting_code,
+        tax_rate_service=tax_rate_service,
+    )
+
+
+def compute_order_values(
+    latitude: float,
+    longitude: float,
+    timestamp: datetime,
+    subtotal_raw: Decimal,
+    reporting_code_service: ReportingCodeByCoordinatesService,
+    tax_rate_service: TaxRateByReportingCodeService,
+) -> OrderComputedPayload:
+    reporting_code = reporting_code_service.get_reporting_code(lat=latitude, lon=longitude)
+    if reporting_code is None:
+        raise ValueError("Delivery point is outside New York State coverage.")
+    return _build_computed_payload(
+        latitude=latitude,
+        longitude=longitude,
+        timestamp=timestamp,
+        subtotal_raw=subtotal_raw,
+        reporting_code=reporting_code,
+        tax_rate_service=tax_rate_service,
+    )
